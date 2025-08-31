@@ -1,0 +1,38 @@
+* { box-sizing: border-box; }
+html, body, #root, .app { margin: 0; height: 100%; }
+.map { position: absolute; inset: 0; }
+body { font: 14px/1.4 system-ui, sans-serif; color: #222; }
+button, input, select { font: inherit; }
+
+.toolbar { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: calc(100vw - 32px); }
+.bar, .menu, .dialog, .status { background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.2); }
+.bar { display: flex; gap: 4px; padding: 6px; }
+.bar button, .menu button, .actions button { border: 0; background: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+.bar button:hover, .menu button:hover:not(:disabled), .bar .active { background: #eef; }
+.bar .icon { display: flex; align-items: center; padding: 8px; color: #555; }
+.bar .divider { width: 1px; margin: 6px 2px; background: #ddd; }
+.menu { display: flex; flex-direction: column; padding: 6px; min-width: 260px; max-height: calc(100vh - 120px); overflow: auto; }
+.menu button { text-align: left; display: flex; flex-direction: column; }
+.menu button:disabled { opacity: 0.4; cursor: default; }
+.menu small { color: #666; }
+.menu .empty { padding: 8px 12px; color: #666; }
+.row { display: flex; align-items: center; gap: 8px; padding: 2px 4px; }
+.row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.row .count { color: #666; font-size: 12px; }
+.row button { padding: 4px 8px; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+
+.dialog { display: flex; flex-direction: column; gap: 10px; padding: 16px; width: 320px; }
+.dialog h3 { margin: 0; }
+.dialog p { margin: 0; color: #666; }
+.dialog label { display: flex; flex-direction: column; gap: 4px; }
+.dialog label.inline { flex-direction: row-reverse; justify-content: flex-end; align-items: center; gap: 8px; }
+.dialog input:not([type='checkbox']), .dialog select { padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
+.actions { display: flex; justify-content: flex-end; gap: 6px; }
+.actions .primary { background: #4363d8; color: #fff; }
+.actions .primary:disabled { opacity: 0.6; }
+
+.status { position: absolute; left: 16px; bottom: 24px; max-width: calc(100vw - 32px); padding: 8px 14px; cursor: pointer; z-index: 1; }
+.status.error { background: #fdecea; color: #a12; }
+.maplibregl-popup-content table { border-collapse: collapse; }
+.maplibregl-popup-content th { text-align: left; padding-right: 8px; color: #666; font-weight: normal; }
