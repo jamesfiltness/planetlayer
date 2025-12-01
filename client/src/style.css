@@ -32,7 +32,10 @@ button, input, select { font: inherit; }
 .actions .primary { background: #4363d8; color: #fff; }
 .actions .primary:disabled { opacity: 0.6; }
 
-.status { position: absolute; left: 16px; bottom: 24px; max-width: calc(100vw - 32px); padding: 8px 14px; cursor: pointer; z-index: 1; }
+.status { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: max-content; max-width: min(560px, calc(100vw - 32px)); display: flex; align-items: flex-start; gap: 8px; padding: 8px 8px 8px 14px; z-index: 1; }
+.status .message { flex: 1; padding: 4px 0; overflow-wrap: anywhere; }
+.status .close { flex: none; border: 0; background: none; color: inherit; font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 6px; cursor: pointer; opacity: 0.6; }
+.status .close:hover { opacity: 1; background: rgb(0 0 0 / 0.06); }
 .status.error { background: #fdecea; color: #a12; }
 .maplibregl-popup-content table { border-collapse: collapse; }
 .maplibregl-popup-content th { text-align: left; padding-right: 8px; color: #666; font-weight: normal; }

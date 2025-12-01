@@ -115,7 +115,12 @@ export default function App() {
       }}
     >
       <div ref={container} className="map" />
-      {status && <div className={`status ${status.error ? 'error' : ''}`} onClick={() => setStatus(null)}>{status.message}</div>}
+      {status && (
+        <div className={`status ${status.error ? 'error' : ''}`} role={status.error ? 'alert' : 'status'}>
+          <span className="message">{status.message}</span>
+          <button className="close" title="Dismiss" aria-label="Dismiss" onClick={() => setStatus(null)}>×</button>
+        </div>
+      )}
       <Toolbar
         layers={layers}
         hidden={hidden}
