@@ -3,7 +3,7 @@ import multer from 'multer';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { rm } from 'node:fs/promises';
-import { badRequest, pool } from './db.js';
+import { badRequest, migrate, pool } from './db.js';
 import { importFile } from './import.js';
 import { runTool } from './tools.js';
 
@@ -62,6 +62,8 @@ app.use((error, req, res, next) => {
   if (!error.status) console.error(error);
   res.status(error.status ?? 500).json({ error: error.message });
 });
+
+await migrate();
 
 const port = process.env.PORT ?? 8080;
 app.listen(port, () => console.log(`Spatial Analysis on http://localhost:${port}`));
