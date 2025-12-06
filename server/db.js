@@ -25,11 +25,12 @@ export async function migrate() {
   }
 }
 
+// The colour comes from the layer's id, so it's stable and neighbours differ.
 export async function createLayer(db, name, shape) {
-  const { rows: [{ n }] } = await db.query('SELECT count(*)::int AS n FROM layers');
+  const { rows: [{ id }] } = await db.query("SELECT nextval(pg_get_serial_sequence('layers', 'id'))::int AS id");
   const { rows } = await db.query(
-    'INSERT INTO layers (name, shape, color) VALUES ($1, $2, $3) RETURNING *',
-    [name, shape, COLORS[n % COLORS.length]],
+    'INSERT INTO layers (id, name, shape, color) VALUES ($1, $2, $3, $4) RETURNING *',
+    [id, name, shape, COLORS[id % COLORS.length]],
   );
   return rows[0];
 }
