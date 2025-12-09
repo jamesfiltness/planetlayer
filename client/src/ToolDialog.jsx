@@ -1,41 +1,5 @@
 import { useState } from 'react';
 
-const ANY = ['point', 'line', 'polygon'];
-
-// Each field is a layer picker (limited to `shapes`, or to the shape of the
-// layer picked in `sameShapeAs`), or a plain setting.
-export const TOOLS = [
-  { id: 'buffer', label: 'Buffer', hint: 'Draw an area around each feature', fields: [
-    { key: 'layer', label: 'Layer', shapes: ANY },
-    { key: 'distance', label: 'Distance', type: 'number', initial: 1 },
-    { key: 'unit', label: 'Unit', options: ['km', 'm', 'mi'], initial: 'km' },
-    { key: 'merge', label: 'Merge overlapping buffers', type: 'checkbox', initial: false },
-  ] },
-  { id: 'intersect', label: 'Intersect', hint: 'Keep the part inside areas', fields: [
-    { key: 'layer', label: 'Layer', shapes: ANY },
-    { key: 'areas', label: 'Areas', shapes: ['polygon'] },
-  ] },
-  { id: 'subtract', label: 'Subtract', hint: 'Keep the part outside areas', fields: [
-    { key: 'layer', label: 'Layer', shapes: ANY },
-    { key: 'areas', label: 'Areas', shapes: ['polygon'] },
-  ] },
-  { id: 'dissolve', label: 'Dissolve', hint: 'Merge shapes that share a value', fields: [
-    { key: 'layer', label: 'Layer', shapes: ['line', 'polygon'] },
-    { key: 'field', label: 'Merge shapes that share', fieldOf: 'layer', initial: '' },
-  ] },
-  { id: 'count', label: 'Count points', hint: 'Count the points inside each area', fields: [
-    { key: 'areas', label: 'Areas', shapes: ['polygon'] },
-    { key: 'points', label: 'Points', shapes: ['point'] },
-  ] },
-  { id: 'centroid', label: 'Centroid', hint: 'Turn each shape into a point at its centre', fields: [
-    { key: 'layer', label: 'Layer', shapes: ['line', 'polygon'] },
-  ] },
-  { id: 'combine', label: 'Combine', hint: 'Put two layers of the same shape together', fields: [
-    { key: 'layer', label: 'Layer', shapes: ANY },
-    { key: 'other', label: 'With', sameShapeAs: 'layer' },
-  ] },
-];
-
 export const canRun = (tool, layers) =>
   tool.fields.every((f) => !f.shapes || layers.some((l) => f.shapes.includes(l.shape)));
 

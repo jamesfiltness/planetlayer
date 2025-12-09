@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import ToolDialog, { TOOLS, canRun } from './ToolDialog.jsx';
+import { FORMATS, TOOLS } from '../../shared/spec.js';
+import ToolDialog, { canRun } from './ToolDialog.jsx';
 
-const ACCEPT = '.geojson,.json,.zip,.kml,.kmz,.gpx,.gpkg,.fgb,.topojson';
+const ACCEPT = Object.keys(FORMATS).join(',');
 
 const Chevron = ({ up }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
