@@ -20,12 +20,11 @@ app.use(express.static(dist));
 
 app.get('/api/layers', async (req, res) => {
   const { rows } = await pool.query(
-    `SELECT l.*, count(f.id)::int AS count,
-            array[min(ST_XMin(f.geom)), min(ST_YMin(f.geom)), max(ST_XMax(f.geom)), max(ST_YMax(f.geom))] AS bbox,
+    `SELECT l.*,
+            (SELECT count(*)::int FROM features WHERE layer_id = l.id) AS count,
             (SELECT coalesce(array_agg(DISTINCT k), '{}') FROM (SELECT props FROM features WHERE layer_id = l.id LIMIT 100) s,
                     jsonb_object_keys(s.props) k) AS fields
-     FROM layers l LEFT JOIN features f ON f.layer_id = l.id
-     GROUP BY l.id ORDER BY l.id`,
+     FROM layers l ORDER BY l.id`,
   );
   res.json(rows);
 });
@@ -35,14 +34,16 @@ app.delete('/api/layers/:id', async (req, res) => {
   res.end();
 });
 
+// Postgres builds the JSON text, which is sent as is rather than parsed and
+// serialised again.
 app.get('/api/layers/:id/geojson', async (req, res) => {
   const { rows } = await pool.query(
     `SELECT json_build_object('type', 'FeatureCollection', 'features', coalesce(json_agg(json_build_object(
-              'type', 'Feature', 'id', id, 'geometry', ST_AsGeoJSON(geom, 7)::json, 'properties', props)), '[]')) AS fc
+              'type', 'Feature', 'id', id, 'geometry', ST_AsGeoJSON(geom, 7)::json, 'properties', props)), '[]'))::text AS fc
      FROM features WHERE layer_id = $1`,
     [Number(req.params.id)],
   );
-  res.json(rows[0].fc);
+  res.type('json').send(rows[0].fc);
 });
 
 app.post('/api/import', upload.single('file'), async (req, res) => {
