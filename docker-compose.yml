@@ -16,8 +16,11 @@ services:
     build: .
     environment:
       DATABASE_URL: postgres://spatial:spatial@db:5432/spatial
+      LISTEN_ADDRESS: 0.0.0.0 # inside the container; `ports` decides who can reach it
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-}
     ports:
-      - '8080:8080'
+      # Only this computer by default. BIND_ADDRESS=0.0.0.0 shares it on your network.
+      - '${BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8080}:8080'
     depends_on:
       db:
         condition: service_healthy
