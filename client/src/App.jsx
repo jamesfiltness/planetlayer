@@ -56,16 +56,26 @@ export default function App() {
     }
   };
 
-  const importFiles = (files) =>
-    attempt('Importing…', async () => {
-      for (const file of files) await api.importFile(file);
-      await refresh();
+  // One import at a time. The list is refreshed even when a file fails,
+  // because the files before it were saved.
+  const importing = useRef(false);
+  const importFiles = async (files) => {
+    if (importing.current || !files.length) return;
+    importing.current = true;
+    await attempt('Importing…', async () => {
+      try {
+        for (const file of files) await api.importFile(file);
+      } finally {
+        await refresh().catch(() => {});
+      }
     });
+    importing.current = false;
+  };
 
   useEffect(() => {
     const m = new maplibregl.Map({ container: container.current, style: STYLE, center: [0, 20], zoom: 2, hash: true, attributionControl: { compact: false } });
     m.on('load', () => setMap(m));
-    refresh();
+    refresh().catch((error) => setStatus({ message: `Couldn't load layers: ${error.message}`, error: true }));
     return () => m.remove();
   }, []);
 
@@ -97,7 +107,7 @@ export default function App() {
       const [feature] = map.queryRenderedFeatures(e.point, { layers: ids });
       if (!feature) return;
       const rows = Object.entries(feature.properties)
-        .map(([k, v]) => `<tr><th>${escape(k)}</th><td>${escape(v)}</td></tr>`)
+        .map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`)
         .join('');
       new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<table>${rows || '<tr><td>No properties</td></tr>'}</table>`).addTo(map);
     };
@@ -133,6 +143,6 @@ export default function App() {
   );
 }
 
-function escape(value) {
+function escapeHtml(value) {
   return String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }

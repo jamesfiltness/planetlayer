@@ -10,16 +10,28 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
     return initial;
   });
   const [running, setRunning] = useState(false);
-  const set = (key, value) => setParams((p) => ({ ...p, [key]: value }));
   const layerById = (id) => layers.find((l) => l.id === Number(id));
 
-  const candidates = (f) => {
+  const candidates = (f, p) => {
     if (f.sameShapeAs) {
-      const first = layerById(params[f.sameShapeAs]);
-      return layers.filter((l) => l.shape === first?.shape && l.id !== first.id);
+      const first = layerById(p[f.sameShapeAs]);
+      return first ? layers.filter((l) => l.shape === first.shape && l.id !== first.id) : [];
     }
     return layers.filter((l) => f.shapes.includes(l.shape));
   };
+  const properties = (f, p) => layerById(p[f.fieldOf])?.fields ?? [];
+
+  // Changing a layer clears any field that depends on it and no longer fits,
+  // so a hidden stale value is never sent.
+  const set = (key, value) =>
+    setParams((p) => {
+      const next = { ...p, [key]: value };
+      for (const f of tool.fields) {
+        if (f.sameShapeAs === key && !candidates(f, next).some((l) => String(l.id) === String(next[f.key]))) next[f.key] = '';
+        if (f.fieldOf === key && !properties(f, next).includes(next[f.key])) next[f.key] = '';
+      }
+      return next;
+    });
 
   const input = (f) => {
     const value = params[f.key];
@@ -27,7 +39,7 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
       return (
         <select value={value} onChange={(e) => set(f.key, e.target.value)} required>
           <option value="">Choose…</option>
-          {candidates(f).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          {candidates(f, params).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>
       );
     }
@@ -35,7 +47,7 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
       return (
         <select value={value} onChange={(e) => set(f.key, e.target.value)}>
           <option value="">Everything</option>
-          {(layerById(params[f.fieldOf])?.fields ?? []).map((k) => <option key={k}>{k}</option>)}
+          {properties(f, params).map((k) => <option key={k}>{k}</option>)}
         </select>
       );
     }
