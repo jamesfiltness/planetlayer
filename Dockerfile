@@ -1,7 +1,7 @@
 FROM node:24-alpine AS client
 WORKDIR /app/client
 COPY client/package*.json ./
-RUN npm install
+RUN npm ci
 COPY shared ../shared
 COPY client .
 ARG VITE_TILES
@@ -11,7 +11,7 @@ FROM node:24-alpine
 RUN apk add --no-cache gdal-tools
 WORKDIR /app/server
 COPY server/package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 COPY shared ../shared
 COPY server .
 COPY --from=client /app/client/dist ../client/dist

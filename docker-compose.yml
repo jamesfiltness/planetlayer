@@ -1,6 +1,8 @@
 services:
   db:
-    image: imresamu/postgis:17-3.5
+    # A multi-arch build of PostGIS (the official image has no ARM builds),
+    # pinned so a rebuild can't pull in different code.
+    image: imresamu/postgis:17-3.5@sha256:35fe7dceda62bfe7d2965b0ba78d915ff9f901b5e0466d633ecc58421b5b5210
     environment:
       POSTGRES_USER: spatial
       POSTGRES_PASSWORD: spatial
