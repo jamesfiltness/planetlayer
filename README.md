@@ -1,6 +1,6 @@
 # Spatial Analysis
 
-A small, self-hosted map for spatial analysis: an OpenStreetMap base map, your own layers stored in PostGIS, and seven analysis tools.
+A self-hosted map for spatial analysis: an OpenStreetMap base map, your own layers stored in PostGIS, and seven analysis tools.
 
 ## Run it
 
