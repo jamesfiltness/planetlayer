@@ -27,5 +27,19 @@ services:
       db:
         condition: service_healthy
 
+  # The server's tests, against PostGIS and GDAL: `docker compose run --rm test`.
+  # Each test file makes its own throwaway database, so real data isn't touched.
+  test:
+    build:
+      context: .
+      target: server
+    command: npm test
+    environment:
+      DATABASE_URL: postgres://spatial:spatial@db:5432/spatial
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: [test]
+
 volumes:
   data:
