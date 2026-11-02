@@ -1,9 +1,3 @@
-/**
- * The server's JSON API (see the API section of the README). Every call
- * rejects with an Error whose message is the server's, ready to show.
- */
-
-/** Thrown for a 404, so pages can tell "doesn't exist" from other failures. */
 export class NotFoundError extends Error {}
 
 async function request(path, options) {

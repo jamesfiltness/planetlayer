@@ -1,10 +1,3 @@
-/**
- * /api/maps: maps, and the layer operations that happen within a map (listing
- * its layers, importing files into it, running tools on it).
- *
- * Handlers only read the request and send the result; the work happens in the
- * modules they call.
- */
 import { Router } from 'express';
 import { rm } from 'node:fs/promises';
 import { badRequest } from '../errors.js';
@@ -37,8 +30,7 @@ mapsRouter.delete('/:id', async (req, res) => {
   res.status(204).end();
 });
 
-// Loads the map named in the path into req.map, or answers 404. Runs before
-// the upload, so a file sent to a missing map isn't stored first.
+// Runs before the upload, so a file sent to a missing map isn't stored.
 async function requireMap(req, res, next) {
   req.map = await getMap(req.params.id);
   next();

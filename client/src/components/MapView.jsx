@@ -8,15 +8,6 @@ import MapHeader from './MapHeader.jsx';
 import StatusBanner from './StatusBanner.jsx';
 import Toolbar from './Toolbar.jsx';
 
-/**
- * One map, full screen: the base map with the map's layers drawn on it, a
- * header to go back to the list, and the toolbar. Files dropped anywhere on
- * it are imported into the map.
- *
- * @param {object} props
- * @param {string} props.mapId
- * @param {string | undefined} props.name undefined until loaded
- */
 export default function MapView({ mapId, name }) {
   const status = useStatus();
   const [container, map] = useMapLibre();

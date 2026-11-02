@@ -1,20 +1,6 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 
-/**
- * A centred modal dialog. Headless UI traps focus inside it, closes it on
- * Escape or a click outside, and returns focus to where it was when it closes.
- *
- * Render it only while it should be open (`{editing && <Modal …>}`), so its
- * contents start fresh each time.
- *
- * @param {object} props
- * @param {string} props.title
- * @param {() => void} props.onClose called on Escape, a click outside, or Cancel
- * @param {(e: import('react').FormEvent) => void} [props.onSubmit] makes the
- *   panel a form, so Enter in a field submits it
- * @param {import('react').ReactNode} props.children the body
- * @param {import('react').ReactNode} props.actions buttons, right-aligned below the body
- */
+// Render it only while open, so its contents start fresh each time.
 export default function Modal({ title, onClose, onSubmit, children, actions }) {
   return (
     <Dialog open onClose={onClose} className="relative z-50">
@@ -34,7 +20,6 @@ export default function Modal({ title, onClose, onSubmit, children, actions }) {
   );
 }
 
-/** An error message inside a modal, announced to screen readers. */
 export function ModalError({ children }) {
   return children ? <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-red-800">{children}</p> : null;
 }

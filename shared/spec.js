@@ -1,5 +1,4 @@
-// Shared by the server and the client, so what each file type and tool
-// accepts is defined in one place.
+// Used by both the server and the client.
 
 export const SHAPES = ['point', 'line', 'polygon'];
 

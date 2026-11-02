@@ -4,10 +4,6 @@ import { api, NotFoundError } from '../api.js';
 import MapView from '../components/MapView.jsx';
 import NotFound from './NotFound.jsx';
 
-/**
- * /maps/:mapId. Shows the map at once, while its details load; a map that
- * doesn't exist (or was deleted) shows the not-found page instead.
- */
 export default function MapPage() {
   const { mapId } = useParams();
   const [name, setName] = useState();

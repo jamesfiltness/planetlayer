@@ -2,14 +2,6 @@ import { useEffect } from 'react';
 import { geojsonUrl } from '../api.js';
 import { mapLayers, SOURCE_PREFIX, sourceId } from './style.js';
 
-/**
- * Keeps the map's data sources and style layers in step with a list of data
- * layers: adds new ones, removes deleted ones, and shows or hides each.
- *
- * @param {import('maplibre-gl').Map | null} map
- * @param {object[]} layers the map's layers, from the API
- * @param {Set<number>} hidden ids of layers to hide
- */
 export function useLayerSync(map, layers, hidden) {
   useEffect(() => {
     if (!map) return;

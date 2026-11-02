@@ -11,17 +11,9 @@ const run = promisify(execFile);
 const MAX_OUTPUT = 16 * 1024 ** 2; // for ogrinfo summaries and archive listings
 const CHUNK = 5000;
 
-/**
- * Imports every spatial layer in an uploaded file into a map, all or nothing.
- * A source layer holding more than one kind of geometry becomes one map layer
- * per kind.
- *
- * @param {{ originalname: string, path: string }} file a multer upload; the
- *   extension of `originalname` picks the format
- * @param {number} mapId an existing map's id
- * @returns the new layer rows
- * @throws a 400 error for unsupported or unreadable files, a 404 error if the map doesn't exist
- */
+// Imports every spatial layer in an uploaded file into a map, all or nothing.
+// A source layer holding more than one kind of geometry becomes one map layer
+// per kind.
 export async function importFile(file, mapId) {
   const ext = path.extname(file.originalname).toLowerCase();
   if (!Object.hasOwn(FORMATS, ext)) throw badRequest(`Unsupported file type: ${ext || 'none'}`);

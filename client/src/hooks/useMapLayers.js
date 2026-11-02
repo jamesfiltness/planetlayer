@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 
-/**
- * A map's layers, and the actions that change them. Each action reports
- * progress and errors through `attempt` (from useStatus) and reloads the list
- * afterwards.
- *
- * @param {string} mapId from the URL
- * @param {ReturnType<typeof import('./useStatus.js').useStatus>} status
- */
 export function useMapLayers(mapId, { attempt, fail }) {
   const [layers, setLayers] = useState([]);
 
@@ -34,16 +26,14 @@ export function useMapLayers(mapId, { attempt, fail }) {
     importing.current = false;
   };
 
-  /**
-   * Throws if the delete fails, so the confirmation modal can show why. Once
-   * deleted, a failed reload is reported in the status banner instead.
-   */
+  // Throws if the delete fails, so the confirmation modal can show why. Once
+  // deleted, a failed reload is reported in the status banner instead.
   const deleteLayer = async (layer) => {
     await api.deleteLayer(layer.id);
     await refresh().catch((error) => fail(`Deleted, but couldn't reload the layers: ${error.message}`));
   };
 
-  /** Resolves to whether the tool succeeded, so its form knows whether to close. */
+  // Resolves to whether the tool succeeded, so its form knows whether to close.
   const runTool = (tool, params) =>
     attempt('Running…', async () => {
       await api.runTool(mapId, tool, params);

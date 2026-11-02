@@ -3,21 +3,9 @@ import Button from './Button.jsx';
 
 const FIELD = 'rounded-md border border-gray-300 px-2 py-1.5';
 
-/** Whether the map has a layer of a suitable shape for each of the tool's layer fields. */
 export const canRun = (tool, layers) =>
   tool.fields.every((f) => !f.shapes || layers.some((l) => f.shapes.includes(l.shape)));
 
-/**
- * The form for one analysis tool, shown above the toolbar. Its fields come
- * from the tool's definition in shared/spec.js. It closes when the tool runs
- * successfully; on failure it stays open and the status banner shows the error.
- *
- * @param {object} props
- * @param {object} props.tool from TOOLS in shared/spec.js
- * @param {object[]} props.layers the map's layers, to pick from
- * @param {(tool: string, params: object) => Promise<boolean>} props.onRun resolves to whether it worked
- * @param {() => void} props.onClose
- */
 export default function ToolDialog({ tool, layers, onRun, onClose }) {
   const [params, setParams] = useState(() => {
     const initial = { name: '' };

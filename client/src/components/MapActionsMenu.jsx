@@ -3,15 +3,6 @@ import { MoreIcon } from './icons.jsx';
 
 const ITEM = 'block w-full rounded-lg px-3 py-2 text-left cursor-pointer';
 
-/**
- * The "⋯" menu on a map in the list. Headless UI handles the keyboard
- * (Enter or Space to open, arrows to move, Escape to close) and ARIA roles.
- *
- * @param {object} props
- * @param {string} props.mapName used in the button's accessible name
- * @param {() => void} props.onRename
- * @param {() => void} props.onDelete
- */
 export default function MapActionsMenu({ mapName, onRename, onDelete }) {
   return (
     <Menu>

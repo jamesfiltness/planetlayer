@@ -1,16 +1,6 @@
 import { useState } from 'react';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 
-/**
- * The map's layers, in the toolbar's Layers menu: a checkbox to show or hide
- * each, its colour, name and feature count, and a button to delete it.
- *
- * @param {object} props
- * @param {object[]} props.layers
- * @param {Set<number>} props.hidden
- * @param {(id: number) => void} props.onToggle
- * @param {(layer: object) => Promise<void>} props.onDelete throws on failure
- */
 export default function LayerList({ layers, hidden, onToggle, onDelete }) {
   const [deleting, setDeleting] = useState(null);
 

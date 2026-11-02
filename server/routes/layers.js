@@ -1,8 +1,4 @@
-/**
- * /api/layers/:id: operations on one layer. Layer ids are unique across all
- * maps, so these don't need the map. Listing and creating layers happen
- * within a map, in routes/maps.js.
- */
+// Layer ids are unique across maps, so these routes don't need the map.
 import { Router } from 'express';
 import { deleteLayer, layerGeoJson } from '../layers.js';
 

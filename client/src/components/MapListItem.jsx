@@ -1,15 +1,6 @@
 import { Link } from 'react-router';
 import MapActionsMenu from './MapActionsMenu.jsx';
 
-/**
- * One map in the list: its name (a link to open it), how many layers it has
- * and when it was last edited, and its ⋯ menu.
- *
- * @param {object} props
- * @param {{ id: number, name: string, layer_count: number, updated_at: string }} props.map
- * @param {() => void} props.onRename
- * @param {() => void} props.onDelete
- */
 export default function MapListItem({ map, onRename, onDelete }) {
   const layers = `${map.layer_count} ${map.layer_count === 1 ? 'layer' : 'layers'}`;
   return (

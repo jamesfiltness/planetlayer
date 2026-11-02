@@ -10,18 +10,6 @@ const ACCEPT = Object.keys(FORMATS).join(',');
 const PANEL = 'rounded-xl bg-white shadow-panel';
 const MENU = `${PANEL} flex max-h-[calc(100vh-120px)] min-w-[260px] flex-col overflow-auto p-1.5`;
 
-/**
- * The bar at the bottom of the map: the layer list, adding layers from
- * files, and the analysis tools. It can be collapsed out of the way.
- *
- * @param {object} props
- * @param {object[]} props.layers the map's layers
- * @param {Set<number>} props.hidden ids of hidden layers
- * @param {(id: number) => void} props.onToggle show or hide a layer
- * @param {(layer: object) => Promise<void>} props.onDelete delete a layer; throws on failure
- * @param {(files: File[]) => void} props.onImport
- * @param {(tool: string, params: object) => Promise<boolean>} props.onRun resolves to whether it worked
- */
 export default function Toolbar({ layers, hidden, onToggle, onDelete, onImport, onRun }) {
   const [menu, setMenu] = useState(null);
   const [tool, setTool] = useState(null);

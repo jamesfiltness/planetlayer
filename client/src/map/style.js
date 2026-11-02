@@ -1,10 +1,5 @@
-/**
- * MapLibre styles: the base map, and how each data layer is drawn.
- */
-
 const TILES = import.meta.env.VITE_TILES ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-/** The base map: OpenStreetMap raster tiles, or VITE_TILES if set at build time. */
 export const BASE_STYLE = {
   version: 8,
   sources: {
@@ -19,19 +14,10 @@ export const BASE_STYLE = {
   layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
 };
 
-/** Prefix of the MapLibre source (and style layer) ids drawn for data layers. */
 export const SOURCE_PREFIX = 'layer-';
 
-/** The MapLibre source id for a data layer. */
 export const sourceId = (layerId) => `${SOURCE_PREFIX}${layerId}`;
 
-/**
- * The MapLibre style layers that draw one data layer, by its shape: circles
- * for points, lines for lines, and a translucent fill with an outline for
- * polygons.
- *
- * @param {{ id: number, shape: 'point' | 'line' | 'polygon', color: string }} layer
- */
 export function mapLayers({ id, shape, color }) {
   const source = sourceId(id);
   if (shape === 'point') {

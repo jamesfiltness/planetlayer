@@ -10,12 +10,8 @@ import { parseId } from './validation.js';
 // ST_CollectionExtract type for each shape.
 const TYPE = Object.fromEntries(SHAPES.map((shape, i) => [shape, i + 1]));
 
-// Each tool gets the layers picked for its fields (already checked against
-// the field's shapes in shared/spec.js) and the request's settings, and
-// returns the SELECT whose (geom, props) rows become the new layer.
-//
-// Only constants are interpolated into the SQL. Anything from the request
-// must go in `args` as a bind parameter.
+// Each tool returns the SELECT whose (geom, props) rows become the new layer.
+// Only constants go into the SQL; anything from the request goes in `args`.
 const SQL = {
   buffer({ layer: a }, { distance, unit, merge }) {
     if (!Object.hasOwn(UNITS, unit)) throw badRequest(`Unknown unit: ${unit}`);
@@ -124,16 +120,6 @@ const SQL = {
   },
 };
 
-/**
- * Runs an analysis tool on layers of one map and stores the result as a new
- * layer in that map.
- *
- * @param {number} mapId an existing map's id; every layer the tool reads must be in it
- * @param {string} id the tool's id, from TOOLS in shared/spec.js
- * @param {object} params the tool's fields (layer ids and settings) and an optional `name`
- * @returns the new layer row
- * @throws a 400 error for bad parameters or an empty result
- */
 export async function runTool(mapId, id, params = {}) {
   const tool = TOOLS.find((t) => t.id === id);
   if (!tool || !Object.hasOwn(SQL, id)) throw badRequest(`Unknown tool: ${id}`);

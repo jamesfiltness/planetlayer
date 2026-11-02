@@ -1,18 +1,5 @@
 import { useCallback, useState } from 'react';
 
-/**
- * A one-line status message for long-running actions ("Importing…") and
- * their errors, shown by StatusBanner.
- *
- * @returns {{
- *   status: { message: string, error?: boolean } | null,
- *   attempt: (message: string, fn: () => Promise<void>) => Promise<boolean>,
- *   fail: (message: string) => void,
- *   dismiss: () => void,
- * }}
- *   `attempt` shows `message` while `fn` runs, then clears it, or shows the
- *   error if `fn` throws; it resolves to whether `fn` succeeded.
- */
 export function useStatus() {
   const [status, setStatus] = useState(null);
 

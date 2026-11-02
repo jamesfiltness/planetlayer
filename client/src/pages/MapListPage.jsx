@@ -7,10 +7,6 @@ import { PlusIcon } from '../components/icons.jsx';
 import MapListItem from '../components/MapListItem.jsx';
 import MapNameModal from '../components/MapNameModal.jsx';
 
-/**
- * The home page: every map, most recently edited first, with buttons to
- * create, open, rename and delete them.
- */
 export default function MapListPage() {
   const navigate = useNavigate();
   const [maps, setMaps] = useState(null); // null while loading

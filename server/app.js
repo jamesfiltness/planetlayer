@@ -1,8 +1,4 @@
-/**
- * Builds the Express app: security checks, the API, the built client, and
- * error handling. Kept apart from index.js (which listens and migrates) so
- * tests can start the real app on a spare port.
- */
+// Separate from index.js so tests can start the app on a spare port.
 import express from 'express';
 import path from 'node:path';
 import { notFound } from './errors.js';
@@ -12,11 +8,6 @@ import { mapsRouter } from './routes/maps.js';
 
 const DEFAULT_CLIENT_DIR = path.join(import.meta.dirname, '../client/dist');
 
-/**
- * @param {object} [options]
- * @param {string} [options.clientDir] the built client (Vite's dist folder)
- * @param {string[]} [options.allowedHosts] extra host names to answer to; defaults to ALLOWED_HOSTS
- */
 export function createApp({ clientDir = DEFAULT_CLIENT_DIR, allowedHosts = parseAllowedHosts(process.env.ALLOWED_HOSTS) } = {}) {
   const app = express();
 

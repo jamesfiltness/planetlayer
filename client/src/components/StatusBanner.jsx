@@ -1,11 +1,3 @@
-/**
- * The status message at the top of the map ("Importing…", or an error), with
- * a button to dismiss it. Errors use role="alert" so they're read out.
- *
- * @param {object} props
- * @param {{ message: string, error?: boolean } | null} props.status from useStatus
- * @param {() => void} props.onDismiss
- */
 export default function StatusBanner({ status, onDismiss }) {
   if (!status) return null;
   return (

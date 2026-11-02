@@ -2,11 +2,6 @@ import { useEffect } from 'react';
 import maplibregl from 'maplibre-gl';
 import { SOURCE_PREFIX } from './style.js';
 
-/**
- * Clicking a feature of any data layer shows its properties in a popup.
- *
- * @param {maplibregl.Map | null} map
- */
 export function useFeaturePopup(map) {
   useEffect(() => {
     if (!map) return;
@@ -24,8 +19,7 @@ export function useFeaturePopup(map) {
   }, [map]);
 }
 
-// Property names and values come from imported files, so they're escaped
-// before going into the popup's HTML.
+// Properties come from imported files, so they're escaped.
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }

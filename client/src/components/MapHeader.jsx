@@ -1,12 +1,6 @@
 import { Link } from 'react-router';
 import { BackIcon } from './icons.jsx';
 
-/**
- * The panel in the map's top-left corner: a link back to the list of maps
- * and the map's name.
- *
- * @param {{ name: string | undefined }} props undefined while loading
- */
 export default function MapHeader({ name }) {
   return (
     <header className="absolute top-4 left-4 z-10 flex max-w-[calc(100vw-32px)] items-center gap-1 rounded-xl bg-white p-1.5 shadow-panel">

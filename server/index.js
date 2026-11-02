@@ -1,8 +1,3 @@
-/**
- * Starts the server: brings the database schema up to date, then listens.
- * Configured by environment variables (see the README): DATABASE_URL,
- * LISTEN_ADDRESS, PORT and ALLOWED_HOSTS.
- */
 import { createApp } from './app.js';
 import { migrate } from './db.js';
 

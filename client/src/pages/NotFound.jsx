@@ -1,11 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router';
 
-/**
- * Shown for an address the app doesn't know, or a map that doesn't exist.
- *
- * @param {{ message?: string }} props
- */
 export default function NotFound({ message = "There's nothing at this address." }) {
   useEffect(() => {
     document.title = 'Not found · Spatial Analysis';

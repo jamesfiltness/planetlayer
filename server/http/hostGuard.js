@@ -1,27 +1,9 @@
-/**
- * Keeps other websites open in the user's browser from using this app. There
- * are no logins, so this guard is what stops a page elsewhere from reading or
- * changing data here.
- */
 import net from 'node:net';
 
-/**
- * Host names given in ALLOWED_HOSTS (comma-separated), lower-cased.
- *
- * @param {string | undefined} value
- * @returns {string[]}
- */
 export function parseAllowedHosts(value) {
   return (value ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
 }
 
-/**
- * Express middleware refusing requests for unknown host names and
- * cross-site writes.
- *
- * @param {string[]} allowedHosts extra host names to accept besides
- *   localhost, IP addresses and .local names
- */
 export function hostGuard(allowedHosts) {
   // Answers only to host names another website can't borrow. A site can point
   // its own domain at this machine (DNS rebinding), but it can't make the

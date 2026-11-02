@@ -5,17 +5,6 @@ import Modal, { ModalError } from './Modal.jsx';
 // Matches MAX_MAP_NAME in server/validation.js.
 const MAX_LENGTH = 200;
 
-/**
- * Asks for a map's name, to create a map or rename one. The server checks
- * the name too; its error, if any, shows in the modal.
- *
- * @param {object} props
- * @param {string} props.title
- * @param {string} props.submitLabel e.g. "Create" or "Rename"
- * @param {string} [props.initialName]
- * @param {(name: string) => Promise<void>} props.onSubmit throw to show an error
- * @param {() => void} props.onClose
- */
 export default function MapNameModal({ title, submitLabel, initialName = '', onSubmit, onClose }) {
   const [name, setName] = useState(initialName);
   const [busy, setBusy] = useState(false);
