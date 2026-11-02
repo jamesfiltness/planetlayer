@@ -1,2 +1,5 @@
 node_modules
 dist
+coverage
+# Generated from spec.js by `npm run shared-types` in server/
+shared/spec.d.ts
