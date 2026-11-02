@@ -6,10 +6,8 @@ export const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL ?? 'postgres://spatial:spatial@localhost:5432/spatial',
 });
 
-const COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#9a6324'];
 const MIGRATIONS = path.join(import.meta.dirname, 'migrations');
 
-// Applies each migrations/*.sql file once, in name order.
 export async function migrate() {
   await pool.query('CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())');
   const { rows } = await pool.query('SELECT name FROM schema_migrations');
@@ -25,16 +23,6 @@ export async function migrate() {
   }
 }
 
-// The colour comes from the layer's id, so it's stable and neighbours differ.
-export async function createLayer(db, name, shape) {
-  const { rows: [{ id }] } = await db.query("SELECT nextval(pg_get_serial_sequence('layers', 'id'))::int AS id");
-  const { rows } = await db.query(
-    'INSERT INTO layers (id, name, shape, color) VALUES ($1, $2, $3, $4) RETURNING *',
-    [id, name, shape, COLORS[id % COLORS.length]],
-  );
-  return rows[0];
-}
-
 export async function transaction(fn) {
   const client = await pool.connect();
   try {
@@ -48,8 +36,4 @@ export async function transaction(fn) {
   } finally {
     client.release();
   }
-}
-
-export function badRequest(message) {
-  return Object.assign(new Error(message), { status: 400 });
 }

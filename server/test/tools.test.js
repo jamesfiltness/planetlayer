@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { collection, freshDatabase, point, square, upload } from './helpers.js';
 
-let db, importFile, runTool;
+let db, map, importFile, runTool, run;
 const layer = {};
 
 // Three areas in a row and an L, points inside, on a border and outside, and
@@ -14,7 +14,10 @@ before(async () => {
   db = await freshDatabase('spatial_test_tools');
   ({ importFile } = await import('../import.js'));
   ({ runTool } = await import('../tools.js'));
-  const add = async (name, fc) => ([layer[name]] = await importFile(await upload(`${name}.geojson`, fc)));
+  const { createMap } = await import('../maps.js');
+  map = await createMap('Tools');
+  run = (tool, params) => runTool(map.id, tool, params);
+  const add = async (name, fc) => ([layer[name]] = await importFile(await upload(`${name}.geojson`, fc), map.id));
   await add('areas', collection(
     [square(0, 0), { name: 'A', kind: 'x' }],
     [square(1, 0), { name: 'B', kind: 'x' }],
@@ -36,13 +39,13 @@ const layerCount = async () => (await db.pool.query('SELECT count(*)::int AS n F
 
 describe('tools', () => {
   test('count: a point on a shared border counts for both areas', async () => {
-    const out = await runTool('count', { areas: layer.areas.id, points: layer.points.id });
+    const out = await run('count', { areas: layer.areas.id, points: layer.points.id });
     assert.equal(out.shape, 'polygon');
     assert.deepEqual((await features(out)).map((f) => [f.props.name, f.props.count]), [['A', 2], ['B', 2], ['C', 0]]);
   });
 
   test('intersect: keeps the parts of the line inside each area, with both sets of properties', async () => {
-    const out = await runTool('intersect', { layer: layer.line.id, areas: layer.areas.id });
+    const out = await run('intersect', { layer: layer.line.id, areas: layer.areas.id });
     const rows = await features(out);
     assert.equal(out.shape, 'line');
     assert.deepEqual(rows.map((f) => f.props.kind).sort(), ['x', 'x']);
@@ -51,45 +54,45 @@ describe('tools', () => {
   });
 
   test('subtract: keeps the parts of the line outside every area', async () => {
-    const rows = await features(await runTool('subtract', { layer: layer.line.id, areas: layer.areas.id }));
+    const rows = await features(await run('subtract', { layer: layer.line.id, areas: layer.areas.id }));
     assert.equal(rows.length, 1);
     assert.ok(Math.abs(rows[0].length - 1) < 1e-9);
   });
 
   test('dissolve: merges by a property, or everything', async () => {
-    const byKind = await features(await runTool('dissolve', { layer: layer.areas.id, field: 'kind' }));
+    const byKind = await features(await run('dissolve', { layer: layer.areas.id, field: 'kind' }));
     assert.deepEqual(byKind.map((f) => [f.props.kind, f.props.count]).sort(), [['x', 2], ['y', 1]]);
-    const all = await features(await runTool('dissolve', { layer: layer.areas.id, field: '' }));
+    const all = await features(await run('dissolve', { layer: layer.areas.id, field: '' }));
     assert.deepEqual(all.map((f) => f.props.count), [3]);
   });
 
   test('centroid: one point per area, at its centre', async () => {
-    const out = await runTool('centroid', { layer: layer.areas.id });
+    const out = await run('centroid', { layer: layer.areas.id });
     assert.equal(out.shape, 'point');
     assert.deepEqual((await features(out)).map((f) => f.wkt), ['POINT(0.5 0.5)', 'POINT(1.5 0.5)', 'POINT(0.5 1.5)']);
   });
 
   test('buffer: draws a circle of the given radius around each point', async () => {
-    const rows = await features(await runTool('buffer', { layer: layer.points.id, distance: 1, unit: 'km', merge: false }));
+    const rows = await features(await run('buffer', { layer: layer.points.id, distance: 1, unit: 'km', merge: false }));
     assert.equal(rows.length, 4);
     for (const f of rows) assert.ok(Math.abs(f.area / (Math.PI * 1e6) - 1) < 0.02, `area ${f.area}`);
   });
 
   test('buffer: merging joins overlapping buffers', async () => {
     // At 60 km the three points in a row overlap; the far one stays apart.
-    const rows = await features(await runTool('buffer', { layer: layer.points.id, distance: 60, unit: 'km', merge: true }));
+    const rows = await features(await run('buffer', { layer: layer.points.id, distance: 60, unit: 'km', merge: true }));
     assert.equal(rows.length, 2);
   });
 
   test('combine: puts two layers of the same shape together, with a custom name', async () => {
-    const out = await runTool('combine', { layer: layer.areas.id, other: layer.more.id, name: '  Everything  ' });
+    const out = await run('combine', { layer: layer.areas.id, other: layer.more.id, name: '  Everything  ' });
     assert.equal(out.name, 'Everything');
     assert.equal((await features(out)).length, 4);
   });
 
   describe('rejects bad input with a 400', () => {
     const rejects = (tool, params, message) =>
-      assert.rejects(runTool(tool, params), (error) => error.status === 400 && message.test(error.message));
+      assert.rejects(run(tool, params), (error) => error.status === 400 && message.test(error.message));
 
     test('unknown tool', () => rejects('explode', {}, /Unknown tool/));
     test('missing layer', () => rejects('centroid', {}, /Pick a layer for "Layer"/));
@@ -103,10 +106,18 @@ describe('tools', () => {
   });
 
   test('a tool that produces nothing leaves no empty layer behind', async () => {
-    const [far] = await importFile(await upload('far.geojson', collection([point(50, 50)])));
+    const [far] = await importFile(await upload('far.geojson', collection([point(50, 50)])), map.id);
     const before = await layerCount();
-    await assert.rejects(runTool('intersect', { layer: far.id, areas: layer.areas.id }), /produced no features/);
+    await assert.rejects(run('intersect', { layer: far.id, areas: layer.areas.id }), /produced no features/);
     assert.equal(await layerCount(), before);
+  });
+
+  test('a layer from another map cannot be used, and results stay in their own map', async () => {
+    const { createMap } = await import('../maps.js');
+    const other = await createMap('Other');
+    await assert.rejects(runTool(other.id, 'centroid', { layer: layer.areas.id }), (error) => error.status === 400 && /Pick a layer/.test(error.message));
+    const out = await run('centroid', { layer: layer.areas.id });
+    assert.equal(out.map_id, map.id);
   });
 
   test('new layers get stable colours from their id', async () => {

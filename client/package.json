@@ -7,12 +7,16 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.10",
     "maplibre-gl": "^5.13.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router": "^8.5.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.3.3",
     "vite": "^7.1.0"
   }
 }

@@ -3,15 +3,18 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { promisify } from 'node:util';
 import { FORMATS, SHAPES } from '../shared/spec.js';
-import { badRequest, createLayer, transaction } from './db.js';
+import { transaction } from './db.js';
+import { badRequest } from './errors.js';
+import { createLayer } from './layers.js';
 
 const run = promisify(execFile);
 const MAX_OUTPUT = 16 * 1024 ** 2; // for ogrinfo summaries and archive listings
 const CHUNK = 5000;
 
-// Imports every spatial layer in the file, all or nothing. A source layer
-// holding more than one kind of geometry becomes one map layer per kind.
-export async function importFile(file) {
+// Imports every spatial layer in an uploaded file into a map, all or nothing.
+// A source layer holding more than one kind of geometry becomes one map layer
+// per kind.
+export async function importFile(file, mapId) {
   const ext = path.extname(file.originalname).toLowerCase();
   if (!Object.hasOwn(FORMATS, ext)) throw badRequest(`Unsupported file type: ${ext || 'none'}`);
   const drivers = FORMATS[ext].flatMap((driver) => ['-if', driver]);
@@ -27,7 +30,7 @@ export async function importFile(file) {
     for (const source of sources) {
       for (const info of await describe(source, drivers)) {
         const name = sources.length > 1 || info.many ? info.name : base;
-        layers.push(...(await store(db, name, info, readFeatures(source, info, drivers))));
+        layers.push(...(await store(db, mapId, name, info, readFeatures(source, info, drivers))));
       }
     }
     if (!layers.length) throw badRequest('No features found in that file.');
@@ -91,7 +94,7 @@ async function* readFeatures(source, info, drivers) {
   }
 }
 
-async function store(db, name, info, features) {
+async function store(db, mapId, name, info, features) {
   await db.query('TRUNCATE staging');
   let batch = [];
   for await (const feature of features) {
@@ -117,7 +120,7 @@ async function store(db, name, info, features) {
   const layers = [];
   for (const { t } of rows) {
     const shape = SHAPES[t - 1];
-    const layer = await createLayer(db, rows.length > 1 ? `${name} (${shape}s)` : name, shape);
+    const layer = await createLayer(db, mapId, rows.length > 1 ? `${name} (${shape}s)` : name, shape);
     await db.query(
       `INSERT INTO features (layer_id, geom, props)
        SELECT $1, g, props FROM staging, ST_CollectionExtract(geom, $2::int) g WHERE NOT ST_IsEmpty(g)`,

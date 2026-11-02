@@ -1,5 +1,8 @@
 import { SHAPES, TOOLS, UNITS } from '../shared/spec.js';
-import { badRequest, createLayer, transaction } from './db.js';
+import { transaction } from './db.js';
+import { badRequest } from './errors.js';
+import { createLayer } from './layers.js';
+import { parseId } from './validation.js';
 
 // Stored geometries are made valid on import, so the tools use them as they
 // are and can lean on the (layer_id, geom) index.
@@ -7,12 +10,8 @@ import { badRequest, createLayer, transaction } from './db.js';
 // ST_CollectionExtract type for each shape.
 const TYPE = Object.fromEntries(SHAPES.map((shape, i) => [shape, i + 1]));
 
-// Each tool gets the layers picked for its fields (already checked against
-// the field's shapes in shared/spec.js) and the request's settings, and
-// returns the SELECT whose (geom, props) rows become the new layer.
-//
-// Only constants are interpolated into the SQL. Anything from the request
-// must go in `args` as a bind parameter.
+// Each tool returns the SELECT whose (geom, props) rows become the new layer.
+// Only constants go into the SQL; anything from the request goes in `args`.
 const SQL = {
   buffer({ layer: a }, { distance, unit, merge }) {
     if (!Object.hasOwn(UNITS, unit)) throw badRequest(`Unknown unit: ${unit}`);
@@ -121,7 +120,7 @@ const SQL = {
   },
 };
 
-export async function runTool(id, params = {}) {
+export async function runTool(mapId, id, params = {}) {
   const tool = TOOLS.find((t) => t.id === id);
   if (!tool || !Object.hasOwn(SQL, id)) throw badRequest(`Unknown tool: ${id}`);
   if (typeof params !== 'object' || params === null) throw badRequest('Expected a JSON object.');
@@ -130,11 +129,11 @@ export async function runTool(id, params = {}) {
     const picked = {};
     for (const field of tool.fields) {
       const shapes = field.shapes ?? (field.sameShapeAs && [picked[field.sameShapeAs].shape]);
-      if (shapes) picked[field.key] = await loadLayer(db, params[field.key], field.label, shapes);
+      if (shapes) picked[field.key] = await loadLayer(db, mapId, params[field.key], field.label, shapes);
     }
     const { name, shape, args, sql } = SQL[id](picked, params);
     const custom = typeof params.name === 'string' ? params.name.trim() : '';
-    const layer = await createLayer(db, custom || name, shape);
+    const layer = await createLayer(db, mapId, custom || name, shape);
 
     // The new layer's id is bound after the tool's own parameters.
     const target = `$${args.length + 1}`;
@@ -149,11 +148,9 @@ export async function runTool(id, params = {}) {
   });
 }
 
-async function loadLayer(db, id, label, shapes) {
-  const n = typeof id === 'number' || (typeof id === 'string' && id.trim() !== '') ? Number(id) : NaN;
-  const { rows: [layer] } = Number.isInteger(n) && n > 0 && n <= 2 ** 31 - 1
-    ? await db.query('SELECT * FROM layers WHERE id = $1', [n])
-    : { rows: [] };
+// Only layers in the tool's own map can be picked.
+async function loadLayer(db, mapId, id, label, shapes) {
+  const { rows: [layer] } = await db.query('SELECT * FROM layers WHERE id = $1 AND map_id = $2', [parseId(id), mapId]);
   if (!layer) throw badRequest(`Pick a layer for "${label}".`);
   if (!shapes.includes(layer.shape)) throw badRequest(`"${layer.name}" must be a ${shapes.join(' or ')} layer.`);
   return layer;
