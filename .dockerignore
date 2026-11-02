@@ -1,2 +1,4 @@
 **/node_modules
 **/dist
+**/coverage
+shared/spec.d.ts
