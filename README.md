@@ -1,6 +1,6 @@
 # Spatial Analysis
 
-A self-hosted map for spatial analysis: an OpenStreetMap base map, your own layers stored in PostGIS, and seven analysis tools.
+A self-hosted app for spatial analysis: as many maps as you like, each with an OpenStreetMap base map, your own layers stored in PostGIS, and seven analysis tools.
 
 ## Run it
 
@@ -9,6 +9,8 @@ docker compose up --build
 ```
 
 Then open http://localhost:8080. Data is kept in the `data` volume; `docker compose down -v` starts clean.
+
+The database schema is updated when the server starts. Upgrading from a version without multiple maps puts all your existing layers into one map called "My map".
 
 ### Sharing it on your network
 
@@ -24,8 +26,9 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 
 ## What it does
 
+- **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers.
 - **Add layer:** upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers.
-- **Analyse:** each tool writes a new layer.
+- **Analyse:** each tool reads layers from the open map and writes a new layer to it.
 
 | Tool | What it does |
 | --- | --- |
@@ -42,12 +45,45 @@ Click a feature to see its properties.
 ## Layout
 
 ```
-shared/spec.js      file formats, units and tool fields, used by both server and client
-server/            Express: routes (index.js), GDAL import (import.js), PostGIS tools (tools.js)
-server/migrations/ schema, applied in order when the server starts
-server/test/       integration tests against PostGIS and GDAL
-client/            React + MapLibre: map (App.jsx), bottom toolbar (Toolbar.jsx), tool forms (ToolDialog.jsx)
+shared/spec.js          file formats, units and tool fields, used by both server and client
+
+server/index.js         startup: migrate the database, then listen
+server/app.js           the Express app: middleware order, routers, client files, errors
+server/http/            request guard (host names, cross-site writes) and upload settings
+server/routes/          thin route handlers for /api/maps and /api/layers
+server/maps.js          maps: list, create, rename, delete
+server/layers.js        layers: create, list, delete, GeoJSON
+server/import.js        GDAL import into a map
+server/tools.js         the analysis tools, in PostGIS
+server/migrations/      schema, applied in order when the server starts
+server/test/            integration tests against PostGIS and GDAL
+
+client/src/main.jsx     routes: / (list of maps), /maps/:mapId (one map)
+client/src/pages/       one component per route
+client/src/components/  UI pieces: toolbar, tool form, modals, ⋯ menu, list row
+client/src/map/         MapLibre: base style, drawing layers, feature popups
+client/src/hooks/       state for a map's layers and the status banner
+client/src/api.js       calls to the server API
 ```
+
+The client is React with MapLibre, styled with [Tailwind CSS](https://tailwindcss.com) (theme in `client/src/style.css`). Menus and modals use [Headless UI](https://headlessui.com) for keyboard and screen-reader support.
+
+## API
+
+The client uses this JSON API; errors come back as `{ "error": "message" }` with a 4xx or 5xx status.
+
+| Method | Path | Does |
+| --- | --- | --- |
+| GET | `/api/maps` | Every map, most recently edited first, with `layer_count` |
+| POST | `/api/maps` | Create a map: `{ "name": "…" }` |
+| GET | `/api/maps/:id` | One map |
+| PATCH | `/api/maps/:id` | Rename a map: `{ "name": "…" }` |
+| DELETE | `/api/maps/:id` | Delete a map and its layers |
+| GET | `/api/maps/:id/layers` | The map's layers, with feature `count` and property names (`fields`) |
+| POST | `/api/maps/:id/import` | Import a file (multipart field `file`) into the map |
+| POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`) |
+| DELETE | `/api/layers/:id` | Delete a layer |
+| GET | `/api/layers/:id/geojson` | A layer's features as GeoJSON |
 
 ## Developing without Docker for the app
 

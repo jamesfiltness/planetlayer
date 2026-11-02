@@ -1,8 +1,23 @@
 import { useState } from 'react';
+import Button from './Button.jsx';
 
+const FIELD = 'rounded-md border border-gray-300 px-2 py-1.5';
+
+/** Whether the map has a layer of a suitable shape for each of the tool's layer fields. */
 export const canRun = (tool, layers) =>
   tool.fields.every((f) => !f.shapes || layers.some((l) => f.shapes.includes(l.shape)));
 
+/**
+ * The form for one analysis tool, shown above the toolbar. Its fields come
+ * from the tool's definition in shared/spec.js. It closes when the tool runs
+ * successfully; on failure it stays open and the status banner shows the error.
+ *
+ * @param {object} props
+ * @param {object} props.tool from TOOLS in shared/spec.js
+ * @param {object[]} props.layers the map's layers, to pick from
+ * @param {(tool: string, params: object) => Promise<boolean>} props.onRun resolves to whether it worked
+ * @param {() => void} props.onClose
+ */
 export default function ToolDialog({ tool, layers, onRun, onClose }) {
   const [params, setParams] = useState(() => {
     const initial = { name: '' };
@@ -37,7 +52,7 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
     const value = params[f.key];
     if (f.shapes || f.sameShapeAs) {
       return (
-        <select value={value} onChange={(e) => set(f.key, e.target.value)} required>
+        <select className={FIELD} value={value} onChange={(e) => set(f.key, e.target.value)} required>
           <option value="">Choose…</option>
           {candidates(f, params).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>
@@ -45,7 +60,7 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
     }
     if (f.fieldOf) {
       return (
-        <select value={value} onChange={(e) => set(f.key, e.target.value)}>
+        <select className={FIELD} value={value} onChange={(e) => set(f.key, e.target.value)}>
           <option value="">Everything</option>
           {properties(f, params).map((k) => <option key={k}>{k}</option>)}
         </select>
@@ -53,13 +68,13 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
     }
     if (f.options) {
       return (
-        <select value={value} onChange={(e) => set(f.key, e.target.value)}>
+        <select className={FIELD} value={value} onChange={(e) => set(f.key, e.target.value)}>
           {f.options.map((o) => <option key={o}>{o}</option>)}
         </select>
       );
     }
     if (f.type === 'checkbox') return <input type="checkbox" checked={value} onChange={(e) => set(f.key, e.target.checked)} />;
-    return <input type="number" step="any" value={value} onChange={(e) => set(f.key, e.target.value)} required />;
+    return <input className={FIELD} type="number" step="any" value={value} onChange={(e) => set(f.key, e.target.value)} required />;
   };
 
   const submit = async (e) => {
@@ -70,22 +85,22 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
   };
 
   return (
-    <form className="dialog" onSubmit={submit}>
-      <h3>{tool.label}</h3>
-      <p>{tool.hint}</p>
+    <form className="flex w-80 flex-col gap-2.5 rounded-xl bg-white p-4 shadow-panel" onSubmit={submit}>
+      <h3 className="text-[1.17em] font-bold">{tool.label}</h3>
+      <p className="text-gray-500">{tool.hint}</p>
       {tool.fields.map((f) => (
-        <label key={f.key} className={f.type === 'checkbox' ? 'inline' : ''}>
+        <label key={f.key} className={f.type === 'checkbox' ? 'flex flex-row-reverse items-center justify-end gap-2' : 'flex flex-col gap-1'}>
           <span>{f.label}</span>
           {input(f)}
         </label>
       ))}
-      <label>
+      <label className="flex flex-col gap-1">
         <span>New layer name</span>
-        <input value={params.name} onChange={(e) => set('name', e.target.value)} placeholder="Automatic" />
+        <input className={FIELD} value={params.name} onChange={(e) => set('name', e.target.value)} placeholder="Automatic" />
       </label>
-      <div className="actions">
-        <button type="button" onClick={onClose}>Cancel</button>
-        <button type="submit" className="primary" disabled={running}>{running ? 'Running…' : 'Run'}</button>
+      <div className="flex justify-end gap-1.5">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button type="submit" variant="primary" disabled={running}>{running ? 'Running…' : 'Run'}</Button>
       </div>
     </form>
   );

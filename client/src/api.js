@@ -1,22 +1,39 @@
+/**
+ * The server's JSON API (see the API section of the README). Every call
+ * rejects with an Error whose message is the server's, ready to show.
+ */
+
+/** Thrown for a 404, so pages can tell "doesn't exist" from other failures. */
+export class NotFoundError extends Error {}
+
 async function request(path, options) {
   const res = await fetch(`/api${path}`, options);
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? res.statusText);
+  if (!res.ok) {
+    const message = (await res.json().catch(() => ({}))).error ?? res.statusText;
+    throw res.status === 404 ? new NotFoundError(message) : new Error(message);
+  }
   return res.headers.get('content-type')?.includes('json') ? res.json() : null;
 }
 
-const post = (path, body) =>
-  request(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const send = (method, path, body) =>
+  request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
 // Absolute, because MapLibre fetches GeoJSON from a worker.
-export const geojsonUrl = (id) => `${location.origin}/api/layers/${id}/geojson`;
+export const geojsonUrl = (layerId) => `${location.origin}/api/layers/${layerId}/geojson`;
 
 export const api = {
-  layers: () => request('/layers'),
+  maps: () => request('/maps'),
+  map: (id) => request(`/maps/${id}`),
+  createMap: (name) => send('POST', '/maps', { name }),
+  renameMap: (id, name) => send('PATCH', `/maps/${id}`, { name }),
+  deleteMap: (id) => request(`/maps/${id}`, { method: 'DELETE' }),
+
+  layers: (mapId) => request(`/maps/${mapId}/layers`),
   deleteLayer: (id) => request(`/layers/${id}`, { method: 'DELETE' }),
-  runTool: (tool, params) => post(`/tools/${tool}`, params),
-  importFile: (file) => {
+  runTool: (mapId, tool, params) => send('POST', `/maps/${mapId}/tools/${tool}`, params),
+  importFile: (mapId, file) => {
     const body = new FormData();
     body.append('file', file);
-    return request('/import', { method: 'POST', body });
+    return request(`/maps/${mapId}/import`, { method: 'POST', body });
   },
 };
