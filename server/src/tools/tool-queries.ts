@@ -1,23 +1,31 @@
-import { SHAPES, TOOLS, UNITS } from '../shared/spec.js';
-import { transaction } from './db.js';
-import { badRequest } from './errors.js';
-import { createLayer } from './layers.js';
-import { parseId } from './validation.js';
-
-// Stored geometries are made valid on import, so the tools use them as they
-// are and can lean on the (layer_id, geom) index.
-
-// ST_CollectionExtract type for each shape.
-const TYPE = Object.fromEntries(SHAPES.map((shape, i) => [shape, i + 1]));
+import { BadRequestException } from '@nestjs/common';
+import { SHAPES, UNITS } from '../../../shared/spec.js';
+import type { LayerRow, Shape } from '../layers/layer.js';
 
 // Each tool returns the SELECT whose (geom, props) rows become the new layer.
 // Only constants go into the SQL; anything from the request goes in `args`.
-const SQL = {
+//
+// Stored geometries are made valid on import, so the tools use them as they
+// are and can lean on the (layer_id, geom) index.
+export interface ToolQuery {
+  name: string;
+  shape: Shape;
+  args: unknown[];
+  sql: string;
+}
+
+export type PickedLayers = Record<string, LayerRow>;
+export type ToolParams = Record<string, unknown>;
+
+// ST_CollectionExtract type for each shape.
+const TYPE = Object.fromEntries(SHAPES.map((shape, i) => [shape, i + 1])) as Record<Shape, number>;
+
+export const TOOL_QUERIES: Record<string, (layers: PickedLayers, params: ToolParams) => ToolQuery> = {
   buffer({ layer: a }, { distance, unit, merge }) {
-    if (!Object.hasOwn(UNITS, unit)) throw badRequest(`Unknown unit: ${unit}`);
-    const metres = Number(distance) * UNITS[unit];
-    if (!metres || Math.abs(metres) > 100_000) throw badRequest('Distance must be non-zero and at most 100 km.');
-    if (metres < 0 && a.shape !== 'polygon') throw badRequest('Only area layers can take a negative distance.');
+    if (typeof unit !== 'string' || !Object.hasOwn(UNITS, unit)) throw new BadRequestException(`Unknown unit: ${unit}`);
+    const metres = Number(distance) * UNITS[unit as keyof typeof UNITS];
+    if (!metres || Math.abs(metres) > 100_000) throw new BadRequestException('Distance must be non-zero and at most 100 km.');
+    if (metres < 0 && a.shape !== 'polygon') throw new BadRequestException('Only area layers can take a negative distance.');
     const buffered = 'ST_Buffer(geom::geography, $2)::geometry';
     return {
       name: `${a.name} buffer`,
@@ -71,7 +79,7 @@ const SQL = {
         sql: `SELECT ${merged} AS geom, jsonb_build_object('count', count(*)) AS props FROM features WHERE layer_id = $1`,
       };
     }
-    if (typeof field !== 'string') throw badRequest('Pick a property to merge by.');
+    if (typeof field !== 'string') throw new BadRequestException('Pick a property to merge by.');
     return {
       name: `${a.name} dissolved by ${field}`,
       shape: a.shape,
@@ -119,39 +127,3 @@ const SQL = {
     };
   },
 };
-
-export async function runTool(mapId, id, params = {}) {
-  const tool = TOOLS.find((t) => t.id === id);
-  if (!tool || !Object.hasOwn(SQL, id)) throw badRequest(`Unknown tool: ${id}`);
-  if (typeof params !== 'object' || params === null) throw badRequest('Expected a JSON object.');
-
-  return transaction(async (db) => {
-    const picked = {};
-    for (const field of tool.fields) {
-      const shapes = field.shapes ?? (field.sameShapeAs && [picked[field.sameShapeAs].shape]);
-      if (shapes) picked[field.key] = await loadLayer(db, mapId, params[field.key], field.label, shapes);
-    }
-    const { name, shape, args, sql } = SQL[id](picked, params);
-    const custom = typeof params.name === 'string' ? params.name.trim() : '';
-    const layer = await createLayer(db, mapId, custom || name, shape);
-
-    // The new layer's id is bound after the tool's own parameters.
-    const target = `$${args.length + 1}`;
-    const { rowCount } = await db.query(
-      `INSERT INTO features (layer_id, geom, props)
-       SELECT ${target}, geom, props FROM (${sql}) r
-       WHERE geom IS NOT NULL AND NOT ST_IsEmpty(geom)`,
-      [...args, layer.id],
-    );
-    if (!rowCount) throw badRequest('That produced no features.');
-    return layer;
-  });
-}
-
-// Only layers in the tool's own map can be picked.
-async function loadLayer(db, mapId, id, label, shapes) {
-  const { rows: [layer] } = await db.query('SELECT * FROM layers WHERE id = $1 AND map_id = $2', [parseId(id), mapId]);
-  if (!layer) throw badRequest(`Pick a layer for "${label}".`);
-  if (!shapes.includes(layer.shape)) throw badRequest(`"${layer.name}" must be a ${shapes.join(' or ')} layer.`);
-  return layer;
-}
