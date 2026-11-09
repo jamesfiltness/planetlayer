@@ -51,6 +51,9 @@ describe('HTTP', () => {
     assert.equal((await (await fetch(`${base}/api/maps/${map.id}`, json('PATCH', { name: 'Final' }))).json()).name, 'Final');
     assert.ok((await (await fetch(`${base}/api/maps`)).json()).some((m) => m.id === map.id));
     assert.deepEqual(await (await fetch(`${base}/api/maps/${map.id}/layers`)).json(), []);
+    assert.equal((await fetch(`${base}/api/maps/${map.id}/view`, json('PUT', { center: [1, 2], zoom: 3 }))).status, 204);
+    assert.equal((await fetch(`${base}/api/maps/${map.id}/view`, json('PUT', { zoom: 3 }))).status, 400);
+    assert.deepEqual((await (await fetch(`${base}/api/maps/${map.id}`)).json()).view, { center: [1, 2], zoom: 3, bearing: 0, pitch: 0 });
 
     assert.equal((await fetch(`${base}/api/maps/${map.id}`, { method: 'DELETE' })).status, 204);
     assert.equal((await fetch(`${base}/api/maps/${map.id}`)).status, 404);

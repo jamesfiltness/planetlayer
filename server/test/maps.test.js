@@ -60,11 +60,49 @@ describe('maps', () => {
     assert.equal(rowCount, 1);
   });
 
+  test('a new map has no saved view', async () => {
+    assert.equal((await maps.createMap('Unmoved')).view, null);
+  });
+
+  test('a saved view comes back from the map and the list, with bearing and pitch defaulting to 0', async () => {
+    const map = await maps.createMap('Viewed');
+    await maps.saveMapView(map.id, { center: [-0.1276, 51.5072], zoom: 12.5 });
+    const expected = { center: [-0.1276, 51.5072], zoom: 12.5, bearing: 0, pitch: 0 };
+    assert.deepEqual((await maps.getMap(map.id)).view, expected);
+    assert.deepEqual((await maps.listMaps()).find((m) => m.id === map.id).view, expected);
+
+    await maps.saveMapView(map.id, { center: [10, 20], zoom: 3, bearing: -45, pitch: 30 });
+    assert.deepEqual((await maps.getMap(map.id)).view, { center: [10, 20], zoom: 3, bearing: -45, pitch: 30 });
+  });
+
+  test('saving a view is not an edit: updated_at and the list order stay put', async () => {
+    const older = await maps.createMap('Looked at');
+    const newer = await maps.createMap('Edited');
+    await maps.saveMapView(older.id, { center: [1, 2], zoom: 4 });
+    assert.equal((await maps.getMap(older.id)).updated_at.getTime(), older.updated_at.getTime());
+    const ids = (await maps.listMaps()).map((m) => m.id);
+    assert.ok(ids.indexOf(newer.id) < ids.indexOf(older.id));
+  });
+
+  test('impossible views are rejected', async () => {
+    const map = await maps.createMap('Strict');
+    for (const view of [
+      undefined, {}, { zoom: 3 }, { center: [1], zoom: 3 }, { center: [1, 2, 3], zoom: 3 },
+      { center: ['1', 2], zoom: 3 }, { center: [1, 2], zoom: 'NaN' }, { center: [1, 2], zoom: NaN },
+      { center: [1, 91], zoom: 3 }, { center: [181, 2], zoom: 3 }, { center: [1, 2], zoom: -1 },
+      { center: [1, 2], zoom: 3, pitch: 90 }, { center: [1, 2], zoom: 3, bearing: 200 },
+    ]) {
+      await assert.rejects(maps.saveMapView(map.id, view), status(400), `accepted ${JSON.stringify(view)}`);
+    }
+    assert.equal((await maps.getMap(map.id)).view, null);
+  });
+
   test('unknown or impossible ids are not found', async () => {
     for (const id of [999999, '999999', 'abc', -1, 2 ** 31]) {
       await assert.rejects(maps.getMap(id), status(404), `found ${id}`);
     }
     await assert.rejects(maps.renameMap(999999, 'Nope'), status(404));
     await assert.rejects(maps.deleteMap(999999), status(404));
+    await assert.rejects(maps.saveMapView(999999, { center: [1, 2], zoom: 3 }), status(404));
   });
 });
