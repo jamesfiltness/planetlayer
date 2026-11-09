@@ -26,7 +26,7 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 
 ## What it does
 
-- **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers.
+- **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers. Each map opens where you last left it, on any device.
 - **Add layer:** upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers.
 - **Analyse:** each tool reads layers from the open map and writes a new layer to it.
 
@@ -51,7 +51,7 @@ server/index.js         startup: migrate the database, then listen
 server/app.js           the Express app: middleware order, routers, client files, errors
 server/http/            request guard (host names, cross-site writes) and upload settings
 server/routes/          thin route handlers for /api/maps and /api/layers
-server/maps.js          maps: list, create, rename, delete
+server/maps.js          maps: list, create, rename, delete, save the view
 server/layers.js        layers: create, list, delete, GeoJSON
 server/import.js        GDAL import into a map
 server/tools.js         the analysis tools, in PostGIS
@@ -61,7 +61,7 @@ server/test/            integration tests against PostGIS and GDAL
 client/src/main.jsx     routes: / (list of maps), /maps/:mapId (one map)
 client/src/pages/       one component per route
 client/src/components/  UI pieces: toolbar, tool form, modals, ⋯ menu, list row
-client/src/map/         MapLibre: base style, drawing layers, feature popups
+client/src/map/         MapLibre: base style, drawing layers, feature popups, saving the view
 client/src/hooks/       state for a map's layers and the status banner
 client/src/api.js       calls to the server API
 ```
@@ -74,10 +74,11 @@ The client uses this JSON API; errors come back as `{ "error": "message" }` with
 
 | Method | Path | Does |
 | --- | --- | --- |
-| GET | `/api/maps` | Every map, most recently edited first, with `layer_count` |
+| GET | `/api/maps` | Every map, most recently edited first, with `layer_count` and its saved `view` (null until moved) |
 | POST | `/api/maps` | Create a map: `{ "name": "…" }` |
 | GET | `/api/maps/:id` | One map |
 | PATCH | `/api/maps/:id` | Rename a map: `{ "name": "…" }` |
+| PUT | `/api/maps/:id/view` | Save where the map was left: `{ "center": [lng, lat], "zoom": …, "bearing": …, "pitch": … }` (bearing and pitch optional) |
 | DELETE | `/api/maps/:id` | Delete a map and its layers |
 | GET | `/api/maps/:id/layers` | The map's layers, with feature `count` and property names (`fields`) |
 | POST | `/api/maps/:id/import` | Import a file (multipart field `file`) into the map |
