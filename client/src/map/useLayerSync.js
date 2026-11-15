@@ -18,6 +18,8 @@ export function useLayerSync(map, layers, hidden) {
       if (!map.getSource(source)) map.addSource(source, { type: 'geojson', data: geojsonUrl(layer.id) });
       for (const style of mapLayers(layer)) {
         if (!map.getLayer(style.id)) map.addLayer(style);
+        // Restyle a layer that's already drawn. MapLibre ignores unchanged values.
+        else for (const [name, value] of Object.entries(style.paint)) map.setPaintProperty(style.id, name, value);
         map.setLayoutProperty(style.id, 'visibility', hidden.has(layer.id) ? 'none' : 'visible');
       }
     }

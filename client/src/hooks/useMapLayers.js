@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
+import { useStyleSaver } from './useStyleSaver.js';
 
 export function useMapLayers(mapId, { attempt, fail }) {
   const [layers, setLayers] = useState([]);
@@ -26,9 +27,17 @@ export function useMapLayers(mapId, { attempt, fail }) {
     importing.current = false;
   };
 
+  // Restyles the layer on the map straight away; the save follows shortly.
+  const styleSaver = useStyleSaver(fail);
+  const setLayerStyle = (id, style) => {
+    setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, style } : layer)));
+    styleSaver.save(id, style);
+  };
+
   // Throws if the delete fails, so the confirmation modal can show why. Once
   // deleted, a failed reload is reported in the status banner instead.
   const deleteLayer = async (layer) => {
+    styleSaver.cancel(layer.id);
     await api.deleteLayer(layer.id);
     await refresh().catch((error) => fail(`Deleted, but couldn't reload the layers: ${error.message}`));
   };
@@ -40,5 +49,5 @@ export function useMapLayers(mapId, { attempt, fail }) {
       await refresh();
     });
 
-  return { layers, importFiles, deleteLayer, runTool };
+  return { layers, importFiles, setLayerStyle, deleteLayer, runTool };
 }

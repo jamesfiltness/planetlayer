@@ -1,3 +1,4 @@
+import { layerColor } from '../map/style.js';
 import AddLayerButton from './AddLayerButton.jsx';
 import { EyeIcon, EyeOffIcon, LineIcon, PencilIcon, PointsIcon, PolygonIcon } from './icons.jsx';
 
@@ -8,16 +9,19 @@ const ICON_BUTTON = 'flex-none cursor-pointer rounded-lg p-1.5 hover:bg-hover';
 /**
  * The floating list of a map's layers, down the left side below the header.
  * Each row shows the layer's shape (drawn in the layer's colour, so the panel
- * doubles as a legend), its name, and an eye that shows or hides it on the map.
+ * doubles as a legend), its name, a pencil that opens it in the layer editor,
+ * and an eye that shows or hides it on the map.
  * The plus beside the heading adds layers from files.
  *
  * @param {object} props
- * @param {Array<{ id: number, name: string, shape: string, color: string }>} props.layers
+ * @param {Array<{ id: number, name: string, shape: string, style: object }>} props.layers
  * @param {Set<number>} props.hidden ids of the layers currently hidden on the map
  * @param {(id: number) => void} props.onToggle shows a hidden layer, or hides a visible one
+ * @param {number | null} props.editingId id of the layer open in the editor, if any
+ * @param {(id: number) => void} props.onEdit opens a layer in the editor
  * @param {(files: File[]) => void} props.onImport imports the files picked with the plus
  */
-export default function LayersPanel({ layers, hidden, onToggle, onImport }) {
+export default function LayersPanel({ layers, hidden, onToggle, editingId, onEdit, onImport }) {
   return (
     <section
       aria-label="Layers"
@@ -30,7 +34,14 @@ export default function LayersPanel({ layers, hidden, onToggle, onImport }) {
       {layers.length ? (
         <ul className="overflow-auto">
           {layers.map((layer) => (
-            <LayerRow key={layer.id} layer={layer} visible={!hidden.has(layer.id)} onToggle={() => onToggle(layer.id)} />
+            <LayerRow
+              key={layer.id}
+              layer={layer}
+              visible={!hidden.has(layer.id)}
+              editing={layer.id === editingId}
+              onToggle={() => onToggle(layer.id)}
+              onEdit={() => onEdit(layer.id)}
+            />
           ))}
         </ul>
       ) : (
@@ -40,24 +51,26 @@ export default function LayersPanel({ layers, hidden, onToggle, onImport }) {
   );
 }
 
-function LayerRow({ layer, visible, onToggle }) {
+function LayerRow({ layer, visible, editing, onToggle, onEdit }) {
   const ShapeIcon = SHAPE_ICONS[layer.shape];
   const toggleLabel = visible ? 'Hide layer' : 'Show layer';
 
   return (
     <li className="group flex items-center gap-1 pl-2">
-      <span className={`mr-1 flex-none ${visible ? '' : 'opacity-40'}`} style={{ color: layer.color }} title={layer.shape}>
+      <span className={`mr-1 flex-none ${visible ? '' : 'opacity-40'}`} style={{ color: layerColor(layer) }} title={layer.shape}>
         <ShapeIcon />
       </span>
       <span className={`min-w-0 flex-1 truncate ${visible ? '' : 'text-gray-400'}`} title={layer.name}>{layer.name}</span>
 
-      {/* Editing isn't built yet, so the pencil does nothing. It appears on
-          hover, and on keyboard focus so it can still be reached by tabbing. */}
+      {/* Shown on hover, on keyboard focus so it can still be reached by
+          tabbing, and for as long as this layer is open in the editor. */}
       <button
         type="button"
         title="Edit layer"
         aria-label={`Edit ${layer.name}`}
-        className={`${ICON_BUTTON} text-gray-600 opacity-0 group-hover:opacity-100 focus-visible:opacity-100`}
+        aria-pressed={editing}
+        onClick={onEdit}
+        className={`${ICON_BUTTON} text-gray-600 ${editing ? 'bg-hover' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
       >
         <PencilIcon />
       </button>

@@ -28,7 +28,7 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 
 - **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers. Each map opens where you last left it, on any device.
 - **Add layer:** click the **+** at the top of the Layers panel to upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers.
-- **Layers:** the panel on the left lists the map's layers, each with an icon for its shape (points, line or area) in the layer's colour. Click the eye to hide or show a layer on the map.
+- **Layers:** the panel on the left lists the map's layers, each with an icon for its shape (points, line or area) in the layer's colour. Click the eye to hide or show a layer on the map. Hover over a layer and click the pencil to open it in the layer editor on the right, where the **Style** tab sets its fill colour and opacity, outline colour and width, and overall opacity (changes show on the map as you make them, and are saved). The editor's **⋯** menu deletes the layer.
 - **Analyse:** each tool reads layers from the open map and writes a new layer to it.
 
 | Tool | What it does |
@@ -53,7 +53,7 @@ server/app.js           the Express app: middleware order, routers, client files
 server/http/            request guard (host names, cross-site writes) and upload settings
 server/routes/          thin route handlers for /api/maps and /api/layers
 server/maps.js          maps: list, create, rename, delete, save the view
-server/layers.js        layers: create, list, delete, GeoJSON
+server/layers.js        layers: create, list, restyle, delete, GeoJSON
 server/import.js        GDAL import into a map
 server/tools.js         the analysis tools, in PostGIS
 server/migrations/      schema, applied in order when the server starts
@@ -61,9 +61,9 @@ server/test/            integration tests against PostGIS and GDAL
 
 client/src/main.jsx     routes: / (list of maps), /maps/:mapId (one map)
 client/src/pages/       one component per route
-client/src/components/  UI pieces: toolbar, layers panel, tool form, modals, ⋯ menu, list row
+client/src/components/  UI pieces: toolbar, layers panel, layer editor, tool form, modals, ⋯ menu, list row
 client/src/map/         MapLibre: base style, drawing layers, feature popups, saving the view
-client/src/hooks/       state for a map's layers and the status banner
+client/src/hooks/       state for a map's layers, saving their styles, and the status banner
 client/src/api.js       calls to the server API
 ```
 
@@ -81,9 +81,10 @@ The client uses this JSON API; errors come back as `{ "error": "message" }` with
 | PATCH | `/api/maps/:id` | Rename a map: `{ "name": "…" }` |
 | PUT | `/api/maps/:id/view` | Save where the map was left: `{ "center": [lng, lat], "zoom": …, "bearing": …, "pitch": … }` (bearing and pitch optional) |
 | DELETE | `/api/maps/:id` | Delete a map and its layers |
-| GET | `/api/maps/:id/layers` | The map's layers, with feature `count` and property names (`fields`) |
+| GET | `/api/maps/:id/layers` | The map's layers, each with its `style`, feature `count` and property names (`fields`) |
 | POST | `/api/maps/:id/import` | Import a file (multipart field `file`) into the map |
 | POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`) |
+| PUT | `/api/layers/:id/style` | Restyle a layer: `{ "fillColor": "#rrggbb", "fillOpacity": 0–1, "outlineColor": "#rrggbb", "outlineWidth": 0–10, "opacity": 0–1 }` (all required; a line layer ignores the fill) |
 | DELETE | `/api/layers/:id` | Delete a layer |
 | GET | `/api/layers/:id/geojson` | A layer's features as GeoJSON |
 

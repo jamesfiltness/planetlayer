@@ -13,6 +13,8 @@ export const BackIcon = () => <Icon><path d="m15 18-6-6 6-6" /></Icon>;
 
 export const PlusIcon = () => <Icon><path d="M12 5v14M5 12h14" /></Icon>;
 
+export const CloseIcon = () => <Icon><path d="M18 6 6 18M6 6l12 12" /></Icon>;
+
 export const MoreIcon = () => (
   <Icon size={18}>
     <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />

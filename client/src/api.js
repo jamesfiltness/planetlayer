@@ -25,6 +25,8 @@ export const api = {
   saveMapView: (id, view, { keepalive = false } = {}) => send('PUT', `/maps/${id}/view`, view, { keepalive }),
 
   layers: (mapId) => request(`/maps/${mapId}/layers`),
+  // `keepalive` as for saveMapView.
+  saveLayerStyle: (id, style, { keepalive = false } = {}) => send('PUT', `/layers/${id}/style`, style, { keepalive }),
   deleteLayer: (id) => request(`/layers/${id}`, { method: 'DELETE' }),
   runTool: (mapId, tool, params) => send('POST', `/maps/${mapId}/tools/${tool}`, params),
   importFile: (mapId, file) => {

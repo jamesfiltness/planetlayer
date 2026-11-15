@@ -31,3 +31,28 @@ export function parseView(value) {
   }
   return view;
 }
+
+const COLOR = /^#[0-9a-f]{6}$/;
+// The limits match the CHECKs in migrations/005_layer_style.sql.
+const STYLE_LIMITS = { fillOpacity: [0, 1], outlineWidth: [0, 10], opacity: [0, 1] };
+
+/**
+ * A layer's style: `{ fillColor, fillOpacity, outlineColor, outlineWidth, opacity }`.
+ * Colours are six-digit hex (`#1a2b3c`, returned in lower case), opacities run
+ * from 0 to 1 and the outline width is in pixels. Every field is required, and
+ * out-of-range values are rejected, not clamped.
+ */
+export function parseStyle(value) {
+  const style = {};
+  for (const key of ['fillColor', 'outlineColor']) {
+    const color = typeof value?.[key] === 'string' ? value[key].toLowerCase() : '';
+    if (!COLOR.test(color)) throw badRequest(`The style's ${key} must be a colour like #1a2b3c.`);
+    style[key] = color;
+  }
+  for (const [key, [min, max]] of Object.entries(STYLE_LIMITS)) {
+    const n = value[key];
+    if (typeof n !== 'number' || !(n >= min && n <= max)) throw badRequest(`The style's ${key} must be a number from ${min} to ${max}.`);
+    style[key] = n;
+  }
+  return style;
+}

@@ -73,6 +73,14 @@ describe('HTTP', () => {
     }
   });
 
+  test("a layer's style is saved with a PUT, and checked first", async () => {
+    const style = { fillColor: '#112233', fillOpacity: 1, outlineColor: '#445566', outlineWidth: 1, opacity: 1 };
+    assert.equal((await fetch(`${base}/api/layers/999999/style`, json('PUT', style))).status, 404);
+    const res = await fetch(`${base}/api/layers/999999/style`, json('PUT', { ...style, opacity: 2 }));
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).error, /opacity/);
+  });
+
   test('unknown API paths are JSON 404s, not the client page', async () => {
     const res = await fetch(`${base}/api/nope`);
     assert.equal(res.status, 404);
