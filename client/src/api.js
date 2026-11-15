@@ -9,8 +9,8 @@ async function request(path, options) {
   return res.headers.get('content-type')?.includes('json') ? res.json() : null;
 }
 
-const send = (method, path, body) =>
-  request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const send = (method, path, body, options) =>
+  request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), ...options });
 
 // Absolute, because MapLibre fetches GeoJSON from a worker.
 export const geojsonUrl = (layerId) => `${location.origin}/api/layers/${layerId}/geojson`;
@@ -21,6 +21,8 @@ export const api = {
   createMap: (name) => send('POST', '/maps', { name }),
   renameMap: (id, name) => send('PATCH', `/maps/${id}`, { name }),
   deleteMap: (id) => request(`/maps/${id}`, { method: 'DELETE' }),
+  // `keepalive` lets the request finish after the page has gone.
+  saveMapView: (id, view, { keepalive = false } = {}) => send('PUT', `/maps/${id}/view`, view, { keepalive }),
 
   layers: (mapId) => request(`/maps/${mapId}/layers`),
   deleteLayer: (id) => request(`/layers/${id}`, { method: 'DELETE' }),

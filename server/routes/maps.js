@@ -3,7 +3,7 @@ import { rm } from 'node:fs/promises';
 import { badRequest } from '../errors.js';
 import { importFile } from '../import.js';
 import { listLayers } from '../layers.js';
-import { createMap, deleteMap, getMap, listMaps, renameMap } from '../maps.js';
+import { createMap, deleteMap, getMap, listMaps, renameMap, saveMapView } from '../maps.js';
 import { runTool } from '../tools.js';
 import { upload } from '../http/upload.js';
 
@@ -23,6 +23,11 @@ mapsRouter.get('/:id', async (req, res) => {
 
 mapsRouter.patch('/:id', async (req, res) => {
   res.json(await renameMap(req.params.id, req.body?.name));
+});
+
+mapsRouter.put('/:id/view', async (req, res) => {
+  await saveMapView(req.params.id, req.body);
+  res.status(204).end();
 });
 
 mapsRouter.delete('/:id', async (req, res) => {
