@@ -5,6 +5,7 @@ import { useMapLibre } from '../map/useMapLibre.js';
 import { useSaveView } from '../map/useSaveView.js';
 import { useMapLayers } from '../hooks/useMapLayers.js';
 import { useStatus } from '../hooks/useStatus.js';
+import LayersPanel from './LayersPanel.jsx';
 import MapHeader from './MapHeader.jsx';
 import StatusBanner from './StatusBanner.jsx';
 import Toolbar from './Toolbar.jsx';
@@ -12,7 +13,7 @@ import Toolbar from './Toolbar.jsx';
 export default function MapView({ mapId, name, initialView }) {
   const status = useStatus();
   const [container, map] = useMapLibre(initialView);
-  const { layers, importFiles, deleteLayer, runTool } = useMapLayers(mapId, status);
+  const { layers, importFiles, runTool } = useMapLayers(mapId, status);
   const [hidden, setHidden] = useState(() => new Set());
 
   useLayerSync(map, layers, hidden);
@@ -37,8 +38,9 @@ export default function MapView({ mapId, name, initialView }) {
     >
       <div ref={container} className="absolute inset-0" />
       <MapHeader name={name} />
+      <LayersPanel layers={layers} hidden={hidden} onToggle={toggle} onImport={importFiles} />
       <StatusBanner status={status.status} onDismiss={status.dismiss} />
-      <Toolbar layers={layers} hidden={hidden} onToggle={toggle} onDelete={deleteLayer} onImport={importFiles} onRun={runTool} />
+      <Toolbar layers={layers} onRun={runTool} />
     </div>
   );
 }

@@ -27,7 +27,8 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 ## What it does
 
 - **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers. Each map opens where you last left it, on any device.
-- **Add layer:** upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers.
+- **Add layer:** click the **+** at the top of the Layers panel to upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers.
+- **Layers:** the panel on the left lists the map's layers, each with an icon for its shape (points, line or area) in the layer's colour. Click the eye to hide or show a layer on the map.
 - **Analyse:** each tool reads layers from the open map and writes a new layer to it.
 
 | Tool | What it does |
@@ -60,7 +61,7 @@ server/test/            integration tests against PostGIS and GDAL
 
 client/src/main.jsx     routes: / (list of maps), /maps/:mapId (one map)
 client/src/pages/       one component per route
-client/src/components/  UI pieces: toolbar, tool form, modals, ⋯ menu, list row
+client/src/components/  UI pieces: toolbar, layers panel, tool form, modals, ⋯ menu, list row
 client/src/map/         MapLibre: base style, drawing layers, feature popups, saving the view
 client/src/hooks/       state for a map's layers and the status banner
 client/src/api.js       calls to the server API
