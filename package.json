@@ -1,0 +1,9 @@
+{
+  "name": "spatial-analysis",
+  "private": true,
+  "description": "Shortcuts for running the whole app; the code lives in client/ and server/.",
+  "scripts": {
+    "start": "node scripts/ensure-docker.mjs && docker compose up --build",
+    "docker": "node scripts/ensure-docker.mjs"
+  }
+}

@@ -121,7 +121,7 @@ describe('tools', () => {
   });
 
   test('new layers get stable colours from their id', async () => {
-    const { rows } = await db.pool.query('SELECT id, color FROM layers ORDER BY id LIMIT 2');
-    assert.notEqual(rows[0].color, rows[1].color);
+    const { rows } = await db.pool.query('SELECT id, fill_color FROM layers ORDER BY id LIMIT 2');
+    assert.notEqual(rows[0].fill_color, rows[1].fill_color);
   });
 });

@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import MapActionsMenu from './MapActionsMenu.jsx';
+import ActionsMenu from './ActionsMenu.jsx';
 
 export default function MapListItem({ map, onRename, onDelete }) {
   const layers = `${map.layer_count} ${map.layer_count === 1 ? 'layer' : 'layers'}`;
@@ -11,7 +11,10 @@ export default function MapListItem({ map, onRename, onDelete }) {
           {layers} · Edited <time dateTime={map.updated_at}>{formatEdited(new Date(map.updated_at))}</time>
         </span>
       </Link>
-      <MapActionsMenu mapName={map.name} onRename={onRename} onDelete={onDelete} />
+      <ActionsMenu
+        label={`Actions for ${map.name}`}
+        items={[{ label: 'Rename', onSelect: onRename }, { label: 'Delete', danger: true, onSelect: onDelete }]}
+      />
     </li>
   );
 }
