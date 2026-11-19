@@ -5,10 +5,10 @@ A self-hosted app for spatial analysis: as many maps as you like, each with an O
 ## Run it
 
 ```sh
-docker compose up --build
+npm start
 ```
 
-Then open http://localhost:8080. Data is kept in the `data` volume; `docker compose down -v` starts clean.
+This starts Docker Desktop if it isn't already running (on Linux it tells you to start the Docker service instead), then runs `docker compose up --build`. Docker is all you need installed besides npm. Then open http://localhost:8080. Data is kept in the `data` volume; `docker compose down -v` starts clean.
 
 The database schema is updated when the server starts. Upgrading from a version without multiple maps puts all your existing layers into one map called "My map".
 
