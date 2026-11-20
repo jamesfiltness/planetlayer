@@ -81,6 +81,34 @@ describe('HTTP', () => {
     assert.match((await res.json()).error, /opacity/);
   });
 
+  test("a layer's filter, property summaries and filtered copy have routes", async () => {
+    const map = await (await fetch(`${base}/api/maps`, json('POST', { name: 'Filters' }))).json();
+    const { createLayer } = await import('../layers.js');
+    const layer = await createLayer(db.pool, map.id, 'places', 'point');
+    await db.pool.query(
+      `INSERT INTO features (layer_id, geom, props) VALUES ($1, ST_Point(0, 0, 4326), '{"kind": "town"}'), ($1, ST_Point(1, 1, 4326), '{"kind": "city"}')`,
+      [layer.id],
+    );
+    const filter = { match: 'all', conditions: [{ field: 'kind', op: 'eq', value: 'town' }] };
+
+    const saved = await fetch(`${base}/api/layers/${layer.id}/filter`, json('PUT', { filter }));
+    assert.equal(saved.status, 200);
+    assert.deepEqual(await saved.json(), { matching: 1 });
+    assert.equal((await (await fetch(`${base}/api/layers/${layer.id}/geojson`)).json()).features.length, 1);
+    assert.equal((await fetch(`${base}/api/layers/${layer.id}/filter`, json('PUT', { filter: { conditions: 'x' } }))).status, 400);
+    assert.equal((await fetch(`${base}/api/layers/${layer.id}/filter`, json('PUT', {}))).status, 400);
+    assert.equal((await fetch(`${base}/api/layers/999999/filter`, json('PUT', { filter: null }))).status, 404);
+
+    const fields = await (await fetch(`${base}/api/layers/${layer.id}/fields`)).json();
+    assert.deepEqual(fields.map((f) => [f.name, f.type]), [['kind', 'string']]);
+    assert.equal((await fetch(`${base}/api/layers/999999/fields`)).status, 404);
+
+    const copied = await fetch(`${base}/api/layers/${layer.id}/filtered`, json('POST', { filter, name: 'Towns' }));
+    assert.equal(copied.status, 201);
+    assert.equal((await copied.json()).name, 'Towns');
+    assert.equal((await fetch(`${base}/api/layers/${layer.id}/filtered`, json('POST', { filter: null }))).status, 400);
+  });
+
   test('unknown API paths are JSON 404s, not the client page', async () => {
     const res = await fetch(`${base}/api/nope`);
     assert.equal(res.status, 404);

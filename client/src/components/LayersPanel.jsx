@@ -1,6 +1,6 @@
 import { layerColor } from '../map/style.js';
 import AddLayerButton from './AddLayerButton.jsx';
-import { EyeIcon, EyeOffIcon, LineIcon, PencilIcon, PointsIcon, PolygonIcon } from './icons.jsx';
+import { EyeIcon, EyeOffIcon, FilterIcon, LineIcon, PencilIcon, PointsIcon, PolygonIcon } from './icons.jsx';
 
 const SHAPE_ICONS = { point: PointsIcon, line: LineIcon, polygon: PolygonIcon };
 
@@ -9,12 +9,12 @@ const ICON_BUTTON = 'flex-none cursor-pointer rounded-lg p-1.5 hover:bg-hover';
 /**
  * The floating list of a map's layers, down the left side below the header.
  * Each row shows the layer's shape (drawn in the layer's colour, so the panel
- * doubles as a legend), its name, a pencil that opens it in the layer editor,
- * and an eye that shows or hides it on the map.
+ * doubles as a legend), its name, a funnel if it's filtered, a pencil that
+ * opens it in the layer editor, and an eye that shows or hides it on the map.
  * The plus beside the heading adds layers from files.
  *
  * @param {object} props
- * @param {Array<{ id: number, name: string, shape: string, style: object }>} props.layers
+ * @param {Array<{ id: number, name: string, shape: string, style: object, filter: object | null, count: number, matching: number }>} props.layers
  * @param {Set<number>} props.hidden ids of the layers currently hidden on the map
  * @param {(id: number) => void} props.onToggle shows a hidden layer, or hides a visible one
  * @param {number | null} props.editingId id of the layer open in the editor, if any
@@ -61,6 +61,12 @@ function LayerRow({ layer, visible, editing, onToggle, onEdit }) {
         <ShapeIcon />
       </span>
       <span className={`min-w-0 flex-1 truncate ${visible ? '' : 'text-gray-400'}`} title={layer.name}>{layer.name}</span>
+      {layer.filter && (
+        <span className="flex-none p-1.5 text-accent" title={`Filtered: ${layer.matching} of ${layer.count} features shown`}>
+          <FilterIcon size={14} />
+          <span className="sr-only">Filtered: {layer.matching} of {layer.count} features shown</span>
+        </span>
+      )}
 
       {/* Shown on hover, on keyboard focus so it can still be reached by
           tabbing, and for as long as this layer is open in the editor. */}

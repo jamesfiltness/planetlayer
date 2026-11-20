@@ -14,10 +14,10 @@ import Toolbar from './Toolbar.jsx';
 export default function MapView({ mapId, name, initialView }) {
   const status = useStatus();
   const [container, map] = useMapLibre(initialView);
-  const { layers, importFiles, setLayerStyle, deleteLayer, runTool } = useMapLayers(mapId, status);
+  const { layers, importFiles, setLayerStyle, setLayerFilter, saveFilteredAsLayer, deleteLayer, runTool } = useMapLayers(mapId, status);
   const [hidden, setHidden] = useState(() => new Set());
 
-  // Kept as an id, so the editor always shows the layer's latest style and
+  // Kept as an id, so the editor always shows the layer's latest settings and
   // closes by itself if the layer goes away.
   const [editingId, setEditingId] = useState(null);
   const editing = layers.find((layer) => layer.id === editingId);
@@ -49,6 +49,8 @@ export default function MapView({ mapId, name, initialView }) {
         <LayerEditor
           layer={editing}
           onStyleChange={(style) => setLayerStyle(editing.id, style)}
+          onFilterChange={(filter) => setLayerFilter(editing.id, filter)}
+          onSaveFiltered={(filter, name) => saveFilteredAsLayer(editing.id, filter, name)}
           onDelete={() => deleteLayer(editing)}
           onClose={() => setEditingId(null)}
         />

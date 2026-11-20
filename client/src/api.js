@@ -12,8 +12,11 @@ async function request(path, options) {
 const send = (method, path, body, options) =>
   request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), ...options });
 
-// Absolute, because MapLibre fetches GeoJSON from a worker.
-export const geojsonUrl = (layerId) => `${location.origin}/api/layers/${layerId}/geojson`;
+// Absolute, because MapLibre fetches GeoJSON from a worker. A new `revision`
+// gives a new address, so the map fetches the features again after the
+// layer's filter changes.
+export const geojsonUrl = (layerId, revision = 0) =>
+  `${location.origin}/api/layers/${layerId}/geojson${revision ? `?v=${revision}` : ''}`;
 
 export const api = {
   maps: () => request('/maps'),
@@ -27,6 +30,11 @@ export const api = {
   layers: (mapId) => request(`/maps/${mapId}/layers`),
   // `keepalive` as for saveMapView.
   saveLayerStyle: (id, style, { keepalive = false } = {}) => send('PUT', `/layers/${id}/style`, style, { keepalive }),
+  // Resolves to `{ matching }`, the number of features the filter lets through.
+  // `keepalive` as for saveMapView.
+  saveLayerFilter: (id, filter, { keepalive = false } = {}) => send('PUT', `/layers/${id}/filter`, { filter }, { keepalive }),
+  layerFields: (id) => request(`/layers/${id}/fields`),
+  saveFilteredAsLayer: (id, filter, name) => send('POST', `/layers/${id}/filtered`, { filter, name }),
   deleteLayer: (id) => request(`/layers/${id}`, { method: 'DELETE' }),
   runTool: (mapId, tool, params) => send('POST', `/maps/${mapId}/tools/${tool}`, params),
   importFile: (mapId, file) => {

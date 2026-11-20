@@ -1,5 +1,6 @@
 import { pool } from './db.js';
 import { notFound } from './errors.js';
+import { filterSql } from './filter/sql.js';
 import { parseId, parseStyle } from './validation.js';
 
 // New layers take a colour from this list by their id, so a layer's colour is
@@ -38,16 +39,33 @@ export async function createLayer(db, mapId, name, shape) {
   return rows[0];
 }
 
+/**
+ * The map's layers, oldest first. Each has its `style`, its `filter` (or
+ * null), its feature `count`, how many of those features the filter lets
+ * through (`matching`; the same as `count` with no filter), and the names of
+ * the properties found on its first 100 features (`fields`).
+ */
 export async function listLayers(mapId) {
   const { rows } = await pool.query(
-    `SELECT l.id, l.map_id, l.name, l.shape, ${STYLE},
+    `SELECT l.id, l.map_id, l.name, l.shape, ${STYLE}, l.filter,
             (SELECT count(*)::int FROM features WHERE layer_id = l.id) AS count,
             (SELECT coalesce(array_agg(DISTINCT k), '{}') FROM (SELECT props FROM features WHERE layer_id = l.id LIMIT 100) s,
                     jsonb_object_keys(s.props) k) AS fields
      FROM layers l WHERE l.map_id = $1 ORDER BY l.id`,
     [mapId],
   );
+  await Promise.all(rows.map(async (layer) => {
+    layer.matching = layer.filter ? await countMatching(pool, layer.id, layer.filter) : layer.count;
+  }));
   return rows;
+}
+
+/** How many of the layer's features match `filter` (all of them for null). */
+export async function countMatching(db, layerId, filter) {
+  const args = [layerId];
+  const where = filterSql(filter, args);
+  const { rows: [{ n }] } = await db.query(`SELECT count(*)::int AS n FROM features f WHERE f.layer_id = $1 AND ${where}`, args);
+  return n;
 }
 
 // Replaces the whole style; see parseStyle for its fields.
@@ -68,20 +86,26 @@ export async function deleteLayer(id) {
   await touchMap(pool, deleted.map_id);
 }
 
-// Postgres builds the JSON text, which is sent as is.
+/**
+ * The layer's features as GeoJSON text, built by Postgres and sent as is.
+ * Only the features its filter lets through are included.
+ */
 export async function layerGeoJson(id) {
-  const { rows: [layer] } = await pool.query(
-    `SELECT (SELECT json_build_object('type', 'FeatureCollection', 'features', coalesce(json_agg(json_build_object(
-               'type', 'Feature', 'id', f.id, 'geometry', ST_AsGeoJSON(f.geom, 7)::json, 'properties', f.props)), '[]'))
-             FROM features f WHERE f.layer_id = l.id)::text AS fc
-     FROM layers l WHERE l.id = $1`,
-    [parseId(id)],
-  );
+  const { rows: [layer] } = await pool.query('SELECT id, filter FROM layers WHERE id = $1', [parseId(id)]);
   if (!layer) throw notFound('That layer no longer exists.');
-  return layer.fc;
+  const args = [layer.id];
+  const where = filterSql(layer.filter, args);
+  const { rows: [{ fc }] } = await pool.query(
+    `SELECT json_build_object('type', 'FeatureCollection', 'features', coalesce(json_agg(json_build_object(
+              'type', 'Feature', 'id', f.id, 'geometry', ST_AsGeoJSON(f.geom, 7)::json, 'properties', f.props) ORDER BY f.id), '[]'))::text AS fc
+     FROM features f WHERE f.layer_id = $1 AND ${where}`,
+    args,
+  );
+  return fc;
 }
 
-async function touchMap(db, mapId) {
+// Marks the map as just edited. Throws if it no longer exists.
+export async function touchMap(db, mapId) {
   const { rowCount } = await db.query('UPDATE maps SET updated_at = now() WHERE id = $1', [mapId]);
   if (!rowCount) throw notFound('That map no longer exists.');
 }

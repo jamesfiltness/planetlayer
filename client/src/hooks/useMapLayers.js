@@ -1,11 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
-import { useStyleSaver } from './useStyleSaver.js';
+import { useDebouncedSaver } from './useDebouncedSaver.js';
 
+/**
+ * A map's layers as the server lists them (see listLayers in
+ * server/layers.js), and everything that changes them.
+ *
+ * Each layer also gets a client-only `revision`, bumped whenever a new
+ * filter has been saved, so the map knows to fetch its features again.
+ *
+ * @param {number | string} mapId
+ * @param {{ attempt: Function, fail: Function }} status from useStatus
+ */
 export function useMapLayers(mapId, { attempt, fail }) {
   const [layers, setLayers] = useState([]);
+  const update = (id, change) => setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, ...change } : layer)));
 
-  const refresh = useCallback(() => api.layers(mapId).then(setLayers), [mapId]);
+  // A reload keeps each layer's revision, so the map doesn't fetch features
+  // that haven't changed.
+  const refresh = useCallback(() => api.layers(mapId).then((loaded) =>
+    setLayers((current) => loaded.map((layer) => ({ ...layer, revision: current.find((c) => c.id === layer.id)?.revision ?? 0 })))), [mapId]);
 
   useEffect(() => {
     refresh().catch((error) => fail(`Couldn't load layers: ${error.message}`));
@@ -28,16 +42,43 @@ export function useMapLayers(mapId, { attempt, fail }) {
   };
 
   // Restyles the layer on the map straight away; the save follows shortly.
-  const styleSaver = useStyleSaver(fail);
+  const styleSaver = useDebouncedSaver(useCallback((id, style, options) =>
+    api.saveLayerStyle(id, style, options).catch((error) => fail(`Couldn't save the layer's style: ${error.message}`)), [fail]));
   const setLayerStyle = (id, style) => {
-    setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, style } : layer)));
+    update(id, { style });
     styleSaver.save(id, style);
   };
+
+  // The filter is applied by the server, so the map changes once the save is
+  // done. Only the latest save of each layer counts: an earlier one that
+  // finishes late is ignored.
+  const latestFilterSave = useRef(new Map()); // layer id → the newest save's token
+  const filterSaver = useDebouncedSaver(useCallback((id, filter, options) => {
+    const token = {};
+    latestFilterSave.current.set(id, token);
+    api.saveLayerFilter(id, filter, options).then(
+      ({ matching }) => latestFilterSave.current.get(id) === token &&
+        setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, matching, revision: layer.revision + 1 } : layer))),
+      (error) => fail(`Couldn't save the layer's filter: ${error.message}`),
+    );
+  }, [fail]));
+  const setLayerFilter = (id, filter) => {
+    update(id, { filter });
+    filterSaver.save(id, filter);
+  };
+
+  // Resolves to whether it worked, so the form knows whether to clear itself.
+  const saveFilteredAsLayer = (id, filter, name) =>
+    attempt('Saving…', async () => {
+      await api.saveFilteredAsLayer(id, filter, name);
+      await refresh();
+    });
 
   // Throws if the delete fails, so the confirmation modal can show why. Once
   // deleted, a failed reload is reported in the status banner instead.
   const deleteLayer = async (layer) => {
     styleSaver.cancel(layer.id);
+    filterSaver.cancel(layer.id);
     await api.deleteLayer(layer.id);
     await refresh().catch((error) => fail(`Deleted, but couldn't reload the layers: ${error.message}`));
   };
@@ -49,5 +90,5 @@ export function useMapLayers(mapId, { attempt, fail }) {
       await refresh();
     });
 
-  return { layers, importFiles, setLayerStyle, deleteLayer, runTool };
+  return { layers, importFiles, setLayerStyle, setLayerFilter, saveFilteredAsLayer, deleteLayer, runTool };
 }
