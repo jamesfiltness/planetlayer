@@ -41,7 +41,7 @@ function rawRequest(method, headers) {
 }
 
 describe('HTTP', () => {
-  test('maps can be created, read, renamed, listed and deleted', async () => {
+  test('maps can be created, read, renamed, listed, duplicated and deleted', async () => {
     const created = await fetch(`${base}/api/maps`, json('POST', { name: 'Survey' }));
     assert.equal(created.status, 201);
     const map = await created.json();
@@ -54,6 +54,13 @@ describe('HTTP', () => {
     assert.equal((await fetch(`${base}/api/maps/${map.id}/view`, json('PUT', { center: [1, 2], zoom: 3 }))).status, 204);
     assert.equal((await fetch(`${base}/api/maps/${map.id}/view`, json('PUT', { zoom: 3 }))).status, 400);
     assert.deepEqual((await (await fetch(`${base}/api/maps/${map.id}`)).json()).view, { center: [1, 2], zoom: 3, bearing: 0, pitch: 0 });
+
+    const copied = await fetch(`${base}/api/maps/${map.id}/duplicate`, json('POST', { name: 'Final (copy)' }));
+    assert.equal(copied.status, 201);
+    const copy = await copied.json();
+    assert.deepEqual([copy.name, copy.view.zoom], ['Final (copy)', 3]);
+    assert.equal((await fetch(`${base}/api/maps/${map.id}/duplicate`, json('POST', {}))).status, 400);
+    assert.equal((await fetch(`${base}/api/maps/999999/duplicate`, json('POST', { name: 'Nope' }))).status, 404);
 
     assert.equal((await fetch(`${base}/api/maps/${map.id}`, { method: 'DELETE' })).status, 204);
     assert.equal((await fetch(`${base}/api/maps/${map.id}`)).status, 404);

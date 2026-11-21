@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { MAX_MAP_NAME } from '../../../shared/limits.js';
 import { api } from '../api.js';
 import Button from '../components/Button.jsx';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx';
@@ -11,7 +12,7 @@ export default function MapListPage() {
   const navigate = useNavigate();
   const [maps, setMaps] = useState(null); // null while loading
   const [loadError, setLoadError] = useState(null);
-  // At most one modal is open: { type: 'create' | 'rename' | 'delete', map? }.
+  // At most one modal is open: { type: 'create' | 'rename' | 'duplicate' | 'delete', map? }.
   const [modal, setModal] = useState(null);
 
   const load = useCallback(() => {
@@ -32,6 +33,12 @@ export default function MapListPage() {
   // rather than reorder it here.
   const rename = async (name) => {
     await api.renameMap(modal.map.id, name);
+    await load();
+  };
+  // The copy is new, so it goes to the top: reload, as for rename. Staying on
+  // the list (rather than opening the copy) shows both maps side by side.
+  const duplicate = async (name) => {
+    await api.duplicateMap(modal.map.id, name);
     await load();
   };
   const remove = async () => {
@@ -77,6 +84,7 @@ export default function MapListPage() {
                 key={map.id}
                 map={map}
                 onRename={() => setModal({ type: 'rename', map })}
+                onDuplicate={() => setModal({ type: 'duplicate', map })}
                 onDelete={() => setModal({ type: 'delete', map })}
               />
             ))}
@@ -90,6 +98,15 @@ export default function MapListPage() {
       {modal?.type === 'rename' && (
         <MapNameModal title="Rename map" submitLabel="Rename" initialName={modal.map.name} onSubmit={rename} onClose={() => setModal(null)} />
       )}
+      {modal?.type === 'duplicate' && (
+        <MapNameModal
+          title="Duplicate map"
+          submitLabel="Duplicate"
+          initialName={copyName(modal.map.name)}
+          onSubmit={duplicate}
+          onClose={() => setModal(null)}
+        />
+      )}
       {modal?.type === 'delete' && (
         <ConfirmDeleteModal title={`Delete "${modal.map.name}"?`} onConfirm={remove} onClose={() => setModal(null)}>
           {modal.map.layer_count > 0 && `Its ${modal.map.layer_count} ${modal.map.layer_count === 1 ? 'layer' : 'layers'} will be deleted too. `}
@@ -98,4 +115,18 @@ export default function MapListPage() {
       )}
     </div>
   );
+}
+
+const COPY_SUFFIX = ' (copy)';
+
+/**
+ * The name a copy of the map starts with: "<name> (copy)", with the name cut
+ * short (and an ellipsis added) if that would be too long, so the suggested
+ * name can always be saved as it is.
+ */
+function copyName(name) {
+  const chars = Array.from(name); // by code point, as the server counts
+  const room = MAX_MAP_NAME - COPY_SUFFIX.length;
+  const base = chars.length <= room ? name : `${chars.slice(0, room - 1).join('').trimEnd()}…`;
+  return base + COPY_SUFFIX;
 }

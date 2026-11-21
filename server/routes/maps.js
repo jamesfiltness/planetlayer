@@ -3,6 +3,7 @@ import { rm } from 'node:fs/promises';
 import { badRequest } from '../errors.js';
 import { importFile } from '../import.js';
 import { listLayers } from '../layers.js';
+import { duplicateMap } from '../duplicateMap.js';
 import { createMap, deleteMap, getMap, listMaps, renameMap, saveMapView } from '../maps.js';
 import { runTool } from '../tools.js';
 import { upload } from '../http/upload.js';
@@ -15,6 +16,11 @@ mapsRouter.get('/', async (req, res) => {
 
 mapsRouter.post('/', async (req, res) => {
   res.status(201).json(await createMap(req.body?.name));
+});
+
+// Copies the map, its layers and their features into a new map called `name`.
+mapsRouter.post('/:id/duplicate', async (req, res) => {
+  res.status(201).json(await duplicateMap(req.params.id, req.body?.name));
 });
 
 mapsRouter.get('/:id', async (req, res) => {

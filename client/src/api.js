@@ -22,6 +22,8 @@ export const api = {
   maps: () => request('/maps'),
   map: (id) => request(`/maps/${id}`),
   createMap: (name) => send('POST', '/maps', { name }),
+  // Resolves to the new map.
+  duplicateMap: (id, name) => send('POST', `/maps/${id}/duplicate`, { name }),
   renameMap: (id, name) => send('PATCH', `/maps/${id}`, { name }),
   deleteMap: (id) => request(`/maps/${id}`, { method: 'DELETE' }),
   // `keepalive` lets the request finish after the page has gone.

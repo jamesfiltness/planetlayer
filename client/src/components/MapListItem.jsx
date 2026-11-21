@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import ActionsMenu from './ActionsMenu.jsx';
 
-export default function MapListItem({ map, onRename, onDelete }) {
+export default function MapListItem({ map, onRename, onDuplicate, onDelete }) {
   const layers = `${map.layer_count} ${map.layer_count === 1 ? 'layer' : 'layers'}`;
   return (
     <li className="flex items-center gap-2 py-1 pr-2 pl-1 hover:bg-hover">
@@ -13,7 +13,11 @@ export default function MapListItem({ map, onRename, onDelete }) {
       </Link>
       <ActionsMenu
         label={`Actions for ${map.name}`}
-        items={[{ label: 'Rename', onSelect: onRename }, { label: 'Delete', danger: true, onSelect: onDelete }]}
+        items={[
+          { label: 'Rename', onSelect: onRename },
+          { label: 'Duplicate', onSelect: onDuplicate },
+          { label: 'Delete', danger: true, onSelect: onDelete },
+        ]}
       />
     </li>
   );
