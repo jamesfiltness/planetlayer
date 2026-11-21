@@ -1,8 +1,6 @@
-import { layerColor } from '../map/style.js';
 import AddLayerButton from './AddLayerButton.jsx';
-import { EyeIcon, EyeOffIcon, FilterIcon, LineIcon, PencilIcon, PointsIcon, PolygonIcon } from './icons.jsx';
-
-const SHAPE_ICONS = { point: PointsIcon, line: LineIcon, polygon: PolygonIcon };
+import { EyeIcon, EyeOffIcon, FilterIcon, PencilIcon } from './icons.jsx';
+import LayerSwatch from './LayerSwatch.jsx';
 
 const ICON_BUTTON = 'flex-none cursor-pointer rounded-lg p-1.5 hover:bg-hover';
 
@@ -13,8 +11,9 @@ const filterSummary = (layer) =>
 
 /**
  * The floating list of a map's layers, down the left side below the app header.
- * Each row shows the layer's shape (drawn in the layer's colour, so the panel
- * doubles as a legend), its name, a funnel if it's filtered, a pencil that
+ * Each row shows a small picture of the layer, its shape in its colour or a
+ * glimpse of its style, so the panel doubles as a legend (see LayerSwatch),
+ * its name, a funnel if it's filtered, a pencil that
  * opens it in the layer editor, and an eye that shows or hides it on the map.
  * The plus beside the heading adds layers from files.
  *
@@ -57,13 +56,12 @@ export default function LayersPanel({ layers, hidden, onToggle, editingId, onEdi
 }
 
 function LayerRow({ layer, visible, editing, onToggle, onEdit }) {
-  const ShapeIcon = SHAPE_ICONS[layer.shape];
   const toggleLabel = visible ? 'Hide layer' : 'Show layer';
 
   return (
     <li className="group flex items-center gap-1 pl-2">
-      <span className={`mr-1 flex-none ${visible ? '' : 'opacity-40'}`} style={{ color: layerColor(layer) }} title={layer.shape}>
-        <ShapeIcon />
+      <span className={`mr-1 flex-none ${visible ? '' : 'opacity-40'}`}>
+        <LayerSwatch layer={layer} />
       </span>
       <span className={`min-w-0 flex-1 truncate ${visible ? '' : 'text-ink-ghost'}`} title={layer.name}>{layer.name}</span>
       {layer.filter && (

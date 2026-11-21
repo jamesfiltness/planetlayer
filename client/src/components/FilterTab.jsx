@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { conditionProblem, FILTER_MATCHES, FILTER_TOO_BIG, filterTooBig, MAX_FILTER_CONDITIONS } from '../../../shared/filter.js';
-import { useFieldSummaries } from '../hooks/useFieldSummaries.js';
 import Button from './Button.jsx';
 import ConditionRow from './ConditionRow.jsx';
 import { PlusIcon } from './icons.jsx';
@@ -35,11 +34,12 @@ function toFilter(match, rows) {
  * @param {object} props
  * @param {{ id: number, count: number, matching: number | null, filter: object | null }} props.layer
  *   `matching` is null while a changed filter is being saved
+ * @param {{ fields: object[] | null, error: string | null }} props.summaries the layer's properties, from useFieldSummaries
  * @param {(filter: object | null) => void} props.onChange
  * @param {(filter: object, name: string) => Promise<boolean>} props.onSaveAsLayer resolves to whether it worked
  */
-export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
-  const { fields, error } = useFieldSummaries(layer.id);
+export default function FilterTab({ layer, summaries, onChange, onSaveAsLayer }) {
+  const { fields, error } = summaries;
   const [match, setMatch] = useState(layer.filter?.match ?? 'all');
   const [rows, setRows] = useState(() => (layer.filter?.conditions ?? []).map(withKey));
   const sent = useRef(JSON.stringify(layer.filter ?? null));

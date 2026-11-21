@@ -25,17 +25,19 @@ export function ColorField({ label, value, onChange }) {
 }
 
 /**
- * A slider from 0 to `max`, with its value shown beside the label.
+ * A slider from `min` (0 unless given) to `max`, with its value shown beside
+ * the label.
  *
  * @param {object} props
  * @param {string} props.label
  * @param {number} props.value
+ * @param {number} [props.min]
  * @param {number} props.max
  * @param {number} props.step
  * @param {(value: number) => string} props.format how the value is shown, e.g. as a percentage
  * @param {(value: number) => void} props.onChange
  */
-export function SliderField({ label, value, max, step, format, onChange }) {
+export function SliderField({ label, value, min = 0, max, step, format, onChange }) {
   return (
     <label className="flex flex-col gap-1">
       <span className="flex justify-between">
@@ -44,7 +46,7 @@ export function SliderField({ label, value, max, step, format, onChange }) {
       </span>
       <input
         type="range"
-        min={0}
+        min={min}
         max={max}
         step={step}
         value={value}

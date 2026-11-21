@@ -81,7 +81,7 @@ describe('HTTP', () => {
   });
 
   test("a layer's style is saved with a PUT, and checked first", async () => {
-    const style = { fillColor: '#112233', fillOpacity: 1, outlineColor: '#445566', outlineWidth: 1, opacity: 1 };
+    const style = { fillColor: '#112233', fillOpacity: 1, outlineColor: '#445566', outlineWidth: 1, opacity: 1, symbology: { type: 'single' } };
     assert.equal((await fetch(`${base}/api/layers/999999/style`, json('PUT', style))).status, 404);
     const res = await fetch(`${base}/api/layers/999999/style`, json('PUT', { ...style, opacity: 2 }));
     assert.equal(res.status, 400);
