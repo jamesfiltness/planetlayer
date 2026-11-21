@@ -59,7 +59,7 @@ Then ask in plain words, from the folder your data is in: *"Make a map called Ug
 - **The app must be running.** The server is part of the app, at `/mcp` on the app's own address and port. While the app is down, Claude can't use its tools.
 - **Files go straight to the app.** The app runs in Docker and can't see your folders, so Claude asks the `upload_file` tool for a `curl` command and runs it on your computer. The file goes from your disk to the app's import, as if you'd dropped it on the map, and never passes through the model. This needs an assistant that can run commands on your computer: Claude Code in the terminal or the desktop app, in a session running on your machine. Claude Code on the web, or a cloud session, can't reach `localhost`. Assistants that can't run commands can still send small data inline with `add_features`.
 - **Claude sees summaries, not your whole dataset.** The tools work on layers inside the app and return ids, counts and property summaries. Claude reads features only when it asks to, a page of up to 100 at a time, without coordinates unless needed. Results over 40,000 characters are refused with a hint to ask for less.
-- **Guidance comes with it.** The server tells Claude how analysis is done here (look at a property's real values first, name new layers, state assumptions), and offers step-by-step playbooks, such as ranking facilities by the people they serve, which Claude reads when a question calls for one. They're in `server/assistant/playbooks/`.
+- **Guidance comes with it.** The server tells Claude how analysis is done here (look at a property's real values first, name new layers, state assumptions). It's in `server/assistant/instructions.md`.
 
 | Tools | |
 | --- | --- |
@@ -70,7 +70,6 @@ Then ask in plain words, from the folder your data is in: *"Make a map called Ug
 | Filters | `set_layer_filter`, `save_filtered_layer` |
 | Style | `style_layer` (style type and colours; categories and ranges are worked out from the data) |
 | Analysis | `buffer`, `intersect`, `subtract`, `dissolve`, `summarize`, `centroid`, `combine`, made from `shared/spec.js` |
-| Guidance | `read_playbook` |
 
 `/mcp` follows the same host and cross-site rules as the rest of the app, so other websites can't use it.
 
@@ -102,7 +101,7 @@ server/tools.js         running an analysis tool on the features each picked lay
 server/toolSql.js       each analysis tool's SQL, in PostGIS
 server/summarize.js     the Summarize within tool's SQL
 server/features.js      reading a layer's features a page at a time
-server/assistant/       the tools AI assistants use: registry.js lists them, tools/ holds them by area, playbooks/ the guides
+server/assistant/       the tools AI assistants use: registry.js lists them, tools/ holds them by area, instructions.md the guide sent with them
 server/mcp/             the MCP server built from those tools, and its /mcp route
 server/migrations/      schema, applied in order when the server starts
 server/test/            integration tests against PostGIS and GDAL

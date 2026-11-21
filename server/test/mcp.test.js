@@ -47,10 +47,9 @@ describe('MCP server', () => {
     assert.deepEqual(byName.buffer.inputSchema.required, ['layer']);
   });
 
-  test('it sends the general guide and the list of playbooks as its instructions', () => {
+  test('it sends the guide to working in the app as its instructions', () => {
     const instructions = client.getInstructions();
     assert.match(instructions, /describe_layer/);
-    assert.match(instructions, /- facility-prioritisation: /);
   });
 
   test('a map made over MCP is in the app, with its layers', async () => {

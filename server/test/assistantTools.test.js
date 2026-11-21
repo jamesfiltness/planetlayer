@@ -157,17 +157,12 @@ describe('analysis', () => {
   });
 });
 
-describe('uploads and playbooks', () => {
+describe('uploads', () => {
   test('upload_file gives a command that quotes the path for the shell and for curl', async () => {
     const { map } = await call('create_map', { name: 'Uploads' });
     const { command } = await call('upload_file', { map_id: map.id, path: "data/it's \"a\";b.geojson" });
     assert.equal(command, `curl -sS --fail-with-body -F 'file=@"data/it'\\''s \\"a\\";b.geojson"' 'http://localhost:8080/api/maps/${map.id}/import'`);
     await assert.rejects(call('upload_file', { map_id: map.id, path: 'notes.txt' }), /Unsupported file type: \.txt/);
     await assert.rejects(call('upload_file', { map_id: 999999, path: 'a.geojson' }), status(404));
-  });
-
-  test('read_playbook returns the guide', async () => {
-    const { playbook } = await call('read_playbook', { name: 'facility-prioritisation' });
-    assert.match(playbook, /^# Prioritising facilities/);
   });
 });

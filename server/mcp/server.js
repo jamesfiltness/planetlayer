@@ -4,7 +4,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { describeError } from '../http/errorHandler.js';
 import { ASSISTANT_TOOLS } from '../assistant/registry.js';
-import { assistantInstructions } from '../assistant/tools/playbooks.js';
+import { assistantInstructions } from '../assistant/instructions.js';
 
 /**
  * The most characters a tool result can have. Every character of a result
@@ -15,7 +15,7 @@ import { assistantInstructions } from '../assistant/tools/playbooks.js';
  */
 export const MAX_RESULT_CHARS = 40_000;
 
-// Read once: the playbooks only change when the app is rebuilt.
+// Read once: the instructions only change when the app is rebuilt.
 let instructions;
 
 /**
