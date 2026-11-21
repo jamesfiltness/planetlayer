@@ -128,6 +128,16 @@ describe('HTTP', () => {
     assert.match(await res.text(), /<title>Spatial Analysis/);
   });
 
+  test('pages and API answers carry the security headers', async () => {
+    for (const url of ['/', '/api/maps']) {
+      const res = await fetch(base + url);
+      assert.match(res.headers.get('content-security-policy'), /frame-ancestors 'none'/, url);
+      assert.equal(res.headers.get('x-frame-options'), 'DENY', url);
+      assert.equal(res.headers.get('x-content-type-options'), 'nosniff', url);
+      assert.equal(res.headers.get('x-powered-by'), null, url);
+    }
+  });
+
   test('unknown host names and cross-site writes are refused', async () => {
     assert.equal(await rawRequest('GET', { Host: 'evil.example' }), 403);
     assert.equal(await rawRequest('POST', { Origin: 'https://evil.example' }), 403);
