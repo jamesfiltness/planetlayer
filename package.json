@@ -3,7 +3,7 @@
   "private": true,
   "description": "Shortcuts for running the whole app; the code lives in client/ and server/.",
   "scripts": {
-    "start": "node scripts/ensure-docker.mjs && docker compose up --build",
+    "start": "node scripts/ensure-docker.mjs && node scripts/ensure-env.mjs && docker compose up --build",
     "docker": "node scripts/ensure-docker.mjs"
   }
 }

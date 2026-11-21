@@ -7,7 +7,8 @@ import pg from 'pg';
 // files can run in parallel and never touch real data. Returns the db module,
 // bound to that database.
 export async function freshDatabase(name) {
-  const base = process.env.DATABASE_URL ?? 'postgres://spatial:spatial@localhost:5432/spatial';
+  const base = process.env.DATABASE_URL;
+  if (!base) throw new Error('Set DATABASE_URL to run the tests: each test file makes its own database on that server.');
   const admin = new pg.Client({ connectionString: base });
   await admin.connect();
   await admin.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);

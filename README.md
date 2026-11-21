@@ -8,7 +8,9 @@ A self-hosted app for spatial analysis: as many maps as you like, each with an O
 npm start
 ```
 
-This starts Docker Desktop if it isn't already running (on Linux it tells you to start the Docker service instead), then runs `docker compose up --build`. Docker is all you need installed besides npm. Then open http://localhost:8080. Data is kept in the `data` volume; `docker compose down -v` starts clean.
+This starts Docker Desktop if it isn't already running (on Linux it tells you to start the Docker service instead), makes sure your installation has its own database password, then runs `docker compose up --build`. Docker is all you need installed besides npm. Then open http://localhost:8080. Data is kept in the `data` volume; `docker compose down -v` starts clean.
+
+The database password is made the first time you run `npm start` and kept in `.env`, which only you can read and git ignores. Every installation gets a different one, so no copy of this app has a password anyone else knows. If you'd rather choose it, put `DB_PASSWORD=…` in `.env` before the first start. (Installations from before this had a shared password; `npm start` gives yours its own.) Once `.env` exists, `docker compose` commands work on their own, without `npm start`.
 
 The database schema is updated when the server starts. Upgrading from a version without multiple maps puts all your existing layers into one map called "My map".
 
@@ -52,11 +54,12 @@ shared/filter.js        layer filters: their operators and what makes a conditio
 
 server/index.js         startup: migrate the database, then listen
 server/app.js           the Express app: middleware order, routers, client files, errors
-server/http/            request guard (host names, cross-site writes) and upload settings
+server/http/            request guard (host names, cross-site writes), security headers, upload settings, errors
 server/routes/          thin route handlers for /api/maps and /api/layers
 server/maps.js          maps: list, create, rename, delete, save the view
 server/layers.js        layers: create, list, restyle, delete, GeoJSON
-server/import.js        GDAL import into a map
+server/import.js        importing a file into a map, all or nothing
+server/gdal.js          reading uploaded files with GDAL's command-line tools
 server/layerFilter.js   saving a layer's filter, and saving its matching features as a new layer
 server/filter/          filters: checking them, turning them into SQL, summarising a layer's properties
 server/tools.js         the analysis tools, in PostGIS
@@ -100,10 +103,12 @@ The client uses this JSON API; errors come back as `{ "error": "message" }` with
 Run only the database in Docker, and the server and client locally (the server needs GDAL 3.11 or later, for the `gdal`, `ogr2ogr` and `ogrinfo` commands):
 
 ```sh
-docker compose up db -d          # exposes nothing by default; add `ports: ['5432:5432']` to the db service
-cd server && npm install && npm run dev
+docker compose up db -d          # exposes nothing by default; add `ports: ['127.0.0.1:5432:5432']` to the db service
+cd server && npm install && DATABASE_URL=postgres://spatial:$DB_PASSWORD@localhost:5432/spatial npm run dev
 cd client && npm install && npm run dev   # http://localhost:5173, proxies /api to :8080
 ```
+
+`DB_PASSWORD` is the one in `.env` (run `npm start` once, or `node scripts/ensure-env.mjs`, to make it). Keep the `127.0.0.1:` in the port: without it Docker publishes the database to your whole network, and on Linux it gets past the firewall too.
 
 Both only accept connections from this computer. To share them on your network, start the server with `LISTEN_ADDRESS=0.0.0.0 npm run dev` and the client with `npm run dev -- --host`. (In Docker, `LISTEN_ADDRESS` is always `0.0.0.0` inside the container, and `BIND_ADDRESS` decides who can reach it.)
 
@@ -115,10 +120,12 @@ The tests run against PostGIS and GDAL, each test file in its own throwaway data
 docker compose exec app npm test
 ```
 
-(Locally, `cd server && npm test` uses `DATABASE_URL`, like the server.) `server/test/fixtures/make-fixtures.sh` rebuilds the archive fixtures.
+(Locally, `cd server && npm test` needs `DATABASE_URL`, like the server.) `server/test/fixtures/make-fixtures.sh` rebuilds the archive fixtures.
 
 ## Base map
 
 The base map comes from [OpenFreeMap](https://openfreemap.org/): OpenStreetMap data as vector tiles, free to use with no API key or sign-up.
+
+OpenFreeMap is the only other site the app talks to: opening a map fetches its style and tiles from there, so OpenFreeMap sees your IP address and the area you're looking at. Your layers never leave your computer, and the app's fonts are bundled with it.
 
 Choose a base map in **Settings → Theme**. Each theme is one of OpenFreeMap's styles: Light (Positron, the default), Bright, Liberty, Dark and Fiord. The dark ones also switch the rest of the app to dark. The list lives in `shared/themes.js`; the colours for light and dark are in `client/src/theme.css`.
