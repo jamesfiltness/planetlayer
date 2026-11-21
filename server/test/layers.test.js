@@ -24,6 +24,17 @@ const listed = async (id) => (await layers.listLayers(map.id)).find((layer) => l
 const SINGLE = { type: 'single' };
 const STYLE = { fillColor: '#112233', fillOpacity: 0.5, outlineColor: '#445566', outlineWidth: 3, opacity: 0.8, symbology: SINGLE };
 
+describe('listing layers', () => {
+  test("each layer has the box around its features, or null with none", async () => {
+    assert.deepEqual((await listed(areas.id)).extent, [0, 0, 1, 1]);
+    assert.deepEqual((await listed(points.id)).extent, [0, 0, 0, 0]);
+    const { createLayer } = layers;
+    const empty = await createLayer(db.pool, map.id, 'empty', 'point');
+    assert.equal((await listed(empty.id)).extent, null);
+    await layers.deleteLayer(empty.id);
+  });
+});
+
 describe('layer styles', () => {
   test('a new layer is styled for its shape, in its own colour', async () => {
     const color = areas.style.fillColor;

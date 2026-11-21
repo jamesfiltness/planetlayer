@@ -47,13 +47,17 @@ export async function createLayer(db, mapId, name, shape) {
 /**
  * The map's layers, oldest first. Each has its `style`, its `filter` (or
  * null), its feature `count`, how many of those features the filter lets
- * through (`matching`; the same as `count` with no filter), and the names of
- * the properties found on its first 100 features (`fields`).
+ * through (`matching`; the same as `count` with no filter), the names of
+ * the properties found on its first 100 features (`fields`), and the box
+ * around all its features as `[west, south, east, north]` in degrees
+ * (`extent`; null with no features). The extent ignores the filter.
  */
 export async function listLayers(mapId) {
   const { rows } = await pool.query(
     `SELECT l.id, l.map_id, l.name, l.shape, ${STYLE}, l.filter,
             (SELECT count(*)::int FROM features WHERE layer_id = l.id) AS count,
+            (SELECT CASE WHEN e IS NULL THEN NULL ELSE json_build_array(ST_XMin(e), ST_YMin(e), ST_XMax(e), ST_YMax(e)) END
+             FROM (SELECT ST_Extent(geom) AS e FROM features WHERE layer_id = l.id) x) AS extent,
             (SELECT coalesce(array_agg(DISTINCT k), '{}') FROM (SELECT props FROM features WHERE layer_id = l.id LIMIT 100) s,
                     jsonb_object_keys(s.props) k) AS fields
      FROM layers l WHERE l.map_id = $1 ORDER BY l.id`,

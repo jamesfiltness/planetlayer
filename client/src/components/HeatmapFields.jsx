@@ -7,7 +7,8 @@ const times = (n) => `×${n.toFixed(1)}`;
 
 /**
  * A heatmap's settings: how far each point spreads and how bright the whole
- * heatmap is, with a legend of its colours from sparse to dense.
+ * heatmap is, with a legend of its colours from sparse to dense, and a note
+ * that the intensity is lowered when zoomed out (see heatmapIntensity.js).
  *
  * @param {object} props
  * @param {{ radius: number, intensity: number }} props.symbology
@@ -32,6 +33,7 @@ export default function HeatmapFields({ symbology, onChange }) {
         <span className="h-3 rounded-sm" style={{ backgroundImage: `linear-gradient(to right, transparent, ${HEATMAP_COLORS.join(', ')})` }} />
         <span className="flex justify-between text-ink-faint"><span>Sparse</span><span>Dense</span></span>
       </div>
+      <p className="text-ink-faint">Zoomed out, the intensity is turned down for you, so crowded points don't all turn red.</p>
     </>
   );
 }
