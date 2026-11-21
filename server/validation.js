@@ -58,6 +58,8 @@ const COLOR = /^#[0-9a-f]{6}$/;
 
 /**
  * A layer's style: `{ fillColor, fillOpacity, outlineColor, outlineWidth, opacity }`.
+ * Its `symbology` is checked separately, by parseSymbology in symbology.js,
+ * because that depends on the layer's shape.
  * Colours are six-digit hex (`#1a2b3c`, returned in lower case), opacities run
  * from 0 to 1 and the outline width is in pixels. Every field is required, and
  * out-of-range values are rejected, not clamped.

@@ -9,6 +9,8 @@ function Icon({ size = 16, children }) {
 
 export const ChevronIcon = ({ up }) => <Icon><path d={up ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} /></Icon>;
 
+export const CheckIcon = () => <Icon><path d="M20 6 9 17l-5-5" /></Icon>;
+
 export const PlusIcon = () => <Icon><path d="M12 5v14M5 12h14" /></Icon>;
 
 export const CloseIcon = () => <Icon><path d="M18 6 6 18M6 6l12 12" /></Icon>;

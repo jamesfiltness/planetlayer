@@ -30,7 +30,7 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 
 - **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers. Each map opens where you last left it, on any device.
 - **Add layer:** click the **+** at the top of the Layers panel to upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers.
-- **Layers:** the panel on the left lists the map's layers, each with an icon for its shape (points, line or area) in the layer's colour. Click the eye to hide or show a layer on the map. Hover over a layer and click the pencil to open it in the layer editor on the right, where the **Style** tab sets its fill colour and opacity, outline colour and width, and overall opacity (changes show on the map as you make them, and are saved). The editor's **⋯** menu deletes the layer.
+- **Layers:** the panel on the left lists the map's layers, each with an icon for its shape (points, line or area) in the layer's colour. Click the eye to hide or show a layer on the map. Hover over a layer and click the pencil to open it in the layer editor on the right, where the **Style** tab sets how the layer is drawn: a style type at the top (for now, **Single colour**, one colour for every feature), then its fill colour and opacity, outline colour and width, and overall opacity (changes show on the map as you make them, and are saved). The editor's **⋯** menu deletes the layer.
 - **Filter:** the layer editor's **Filter** tab shows only the features whose properties match conditions, such as `functional` *is one of* `not working`, or `install_year` *is at least* 2015. Each comparison suits the property's type (numbers, text or true/false), common values are suggested from the data, and several conditions can be matched all together or any one of them. Text comparisons ignore case. The filter is saved with the layer, and a funnel in the Layers panel marks a filtered layer with how many features it shows. **Save as new layer** copies the matching features into a layer of their own. The analysis tools always use every feature of a layer, filtered or not: to analyse just the matching ones, save them as a new layer first.
 - **Analyse:** each tool reads layers from the open map and writes a new layer to it.
 
@@ -52,6 +52,7 @@ Click a feature to see its properties.
 shared/spec.js          file formats, units and tool fields, used by both server and client
 shared/filter.js        layer filters: their operators and what makes a condition valid
 shared/limits.js        limits on map and layer names and on layer styles
+shared/symbology.js     layer symbology: the style types, and which layer shapes can use each
 
 server/index.js         startup: migrate the database, then listen
 server/app.js           the Express app: middleware order, routers, client files, errors
@@ -59,6 +60,7 @@ server/http/            request guard (host names, cross-site writes), security 
 server/routes/          thin route handlers for /api/maps and /api/layers
 server/maps.js          maps: list, create, rename, delete, save the view
 server/layers.js        layers: create, list, restyle, delete, GeoJSON
+server/symbology.js     checking a layer's symbology against its shape
 server/import.js        importing a file into a map, all or nothing
 server/gdal.js          reading uploaded files with GDAL's command-line tools
 server/layerFilter.js   saving a layer's filter, and saving its matching features as a new layer
@@ -70,7 +72,8 @@ server/test/            integration tests against PostGIS and GDAL
 client/src/main.jsx     routes: / (list of maps), /maps/:mapId (one map)
 client/src/pages/       one component per route
 client/src/components/  UI pieces: toolbar, layers panel, layer editor and its Style and Filter tabs, tool form, modals, ⋯ menu, list row
-client/src/map/         MapLibre: base style, drawing layers, feature popups, saving the view
+client/src/map/         MapLibre: base style, keeping the map in step with the layers, feature popups, saving the view
+client/src/map/renderers/  how each symbology type is drawn, as MapLibre style layers
 client/src/hooks/       state for a map's layers, saving their styles and filters, property summaries, and the status banner
 client/src/api.js       calls to the server API
 ```
@@ -94,7 +97,7 @@ Names, of maps and of new layers, can be at most 200 characters (`shared/limits.
 | GET | `/api/maps/:id/layers` | The map's layers, each with its `style`, `filter` (or null), feature `count`, how many match the filter (`matching`) and property names (`fields`) |
 | POST | `/api/maps/:id/import` | Import a file (multipart field `file`) into the map |
 | POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`, plus an optional `name` for the new layer) |
-| PUT | `/api/layers/:id/style` | Restyle a layer: `{ "fillColor": "#rrggbb", "fillOpacity": 0–1, "outlineColor": "#rrggbb", "outlineWidth": 0–10, "opacity": 0–1 }` (all required; a line layer ignores the fill) |
+| PUT | `/api/layers/:id/style` | Restyle a layer: `{ "fillColor": "#rrggbb", "fillOpacity": 0–1, "outlineColor": "#rrggbb", "outlineWidth": 0–10, "opacity": 0–1, "symbology": { "type": "single" } }` (all required; a line layer ignores the fill; the symbology's type must be one the layer's shape allows, see `shared/symbology.js`) |
 | PUT | `/api/layers/:id/filter` | Set a layer's filter: `{ "filter": { "match": "all" \| "any", "conditions": [{ "field", "op", "value" }] } }`, or `{ "filter": null }` for none (operators in `shared/filter.js`). The whole body can be at most 48 KB. Returns `{ "matching": n }` |
 | GET | `/api/layers/:id/fields` | Every property of the layer's features, with its type, number range and most common values |
 | POST | `/api/layers/:id/filtered` | Save the features matching `{ "filter": …, "name": "…" }` (name optional) as a new layer in the same map |

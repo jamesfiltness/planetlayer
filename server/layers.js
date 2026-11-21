@@ -1,6 +1,7 @@
 import { pool } from './db.js';
 import { notFound } from './errors.js';
 import { filterSql } from './filter/sql.js';
+import { parseSymbology } from './symbology.js';
 import { fitLayerName, parseId, parseStyle } from './validation.js';
 
 // New layers take a colour from this list by their id, so a layer's colour is
@@ -8,8 +9,10 @@ import { fitLayerName, parseId, parseStyle } from './validation.js';
 const COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#9a6324'];
 
 // A layer's style as the API gives it, built from the columns of `layers l`.
+// A new layer's symbology is the column's default, `single`.
 const STYLE = `json_build_object('fillColor', l.fill_color, 'fillOpacity', l.fill_opacity,
-  'outlineColor', l.outline_color, 'outlineWidth', l.outline_width, 'opacity', l.opacity) AS style`;
+  'outlineColor', l.outline_color, 'outlineWidth', l.outline_width, 'opacity', l.opacity,
+  'symbology', l.symbology) AS style`;
 
 // How a new layer looks until it's restyled: translucent areas outlined in
 // their own colour, solid points ringed in white, and lines (which have no
@@ -70,13 +73,21 @@ export async function countMatching(db, layerId, filter) {
   return n;
 }
 
-// Replaces the whole style; see parseStyle for its fields.
+/**
+ * Replaces the whole style: the fields parseStyle checks, and a `symbology`
+ * that parseSymbology checks against the layer's shape. Both are required.
+ */
 export async function saveLayerStyle(id, value) {
   const style = parseStyle(value);
+  const layerId = parseId(id);
+  // The symbology can only be checked once the layer's shape is known.
+  const { rows: [layer] } = await pool.query('SELECT shape FROM layers WHERE id = $1', [layerId]);
+  if (!layer) throw notFound('That layer no longer exists.');
+  const symbology = parseSymbology(value.symbology, layer.shape);
   const { rows: [saved] } = await pool.query(
-    `UPDATE layers SET fill_color = $2, fill_opacity = $3, outline_color = $4, outline_width = $5, opacity = $6
+    `UPDATE layers SET fill_color = $2, fill_opacity = $3, outline_color = $4, outline_width = $5, opacity = $6, symbology = $7
      WHERE id = $1 RETURNING map_id`,
-    [parseId(id), style.fillColor, style.fillOpacity, style.outlineColor, style.outlineWidth, style.opacity],
+    [layerId, style.fillColor, style.fillOpacity, style.outlineColor, style.outlineWidth, style.opacity, symbology],
   );
   if (!saved) throw notFound('That layer no longer exists.');
   await touchMap(pool, saved.map_id);
