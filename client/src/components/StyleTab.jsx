@@ -1,7 +1,8 @@
+import { STYLE_LIMITS } from '../../../shared/limits.js';
 import { ColorField, SliderField } from './StyleFields.jsx';
 
-// Matches the outline width limit in server/validation.js.
-const MAX_OUTLINE_WIDTH = 10;
+// The top of each slider. Every range starts at 0, as the sliders do.
+const MAX = Object.fromEntries(Object.entries(STYLE_LIMITS).map(([key, [, max]]) => [key, max]));
 
 const percent = (n) => `${Math.round(n * 100)}%`;
 const pixels = (n) => `${n} px`;
@@ -25,19 +26,19 @@ export default function StyleTab({ shape, style, onChange }) {
       {!isLine && (
         <>
           <ColorField label="Fill colour" value={style.fillColor} onChange={set('fillColor')} />
-          <SliderField label="Fill opacity" value={style.fillOpacity} max={1} step={0.01} format={percent} onChange={set('fillOpacity')} />
+          <SliderField label="Fill opacity" value={style.fillOpacity} max={MAX.fillOpacity} step={0.01} format={percent} onChange={set('fillOpacity')} />
         </>
       )}
       <ColorField label={isLine ? 'Line colour' : 'Outline colour'} value={style.outlineColor} onChange={set('outlineColor')} />
       <SliderField
         label={isLine ? 'Line width' : 'Outline width'}
         value={style.outlineWidth}
-        max={MAX_OUTLINE_WIDTH}
+        max={MAX.outlineWidth}
         step={0.5}
         format={pixels}
         onChange={set('outlineWidth')}
       />
-      <SliderField label="Overall opacity" value={style.opacity} max={1} step={0.01} format={percent} onChange={set('opacity')} />
+      <SliderField label="Overall opacity" value={style.opacity} max={MAX.opacity} step={0.01} format={percent} onChange={set('opacity')} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { MAX_LAYER_NAME } from '../../../shared/limits.js';
 import Button from './Button.jsx';
+import { FIELD } from './fieldClass.js';
 
-const FIELD = 'rounded-md border border-edge px-2 py-1.5';
 
 /**
  * The foot of the Filter tab: copies the features the filter lets through
@@ -27,7 +28,7 @@ export default function SaveAsLayerForm({ disabled, onSave }) {
       <h3 className="font-semibold">Save as a new layer</h3>
       <label className="flex flex-col gap-1">
         <span>New layer name</span>
-        <input className={FIELD} value={name} onChange={(e) => setName(e.target.value)} placeholder="Automatic" />
+        <input className={FIELD} value={name} maxLength={MAX_LAYER_NAME} onChange={(e) => setName(e.target.value)} placeholder="Automatic" />
       </label>
       <Button type="submit" variant="primary" className="justify-center" disabled={disabled || saving}>
         {saving ? 'Saving…' : 'Save as new layer'}

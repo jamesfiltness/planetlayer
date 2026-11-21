@@ -27,6 +27,26 @@ export const MAX_FILTER_CONDITIONS = 20;
 export const MAX_FILTER_VALUES = 200; // in one "is one of" list
 const MAX_TEXT = 1000; // characters, in a property name or text value
 
+/**
+ * The most bytes a whole filter can take up, sent as the body of a save.
+ *
+ * The limits above allow far bigger filters than anyone builds by hand, so
+ * this is what really bounds one. It's set by the browser: a save still
+ * waiting when the page closes is sent with `keepalive`, and the browser
+ * refuses keepalive requests over 64 KiB in total. This leaves room for the
+ * other saves (styles, the map's view) going out at the same moment.
+ */
+export const MAX_FILTER_BYTES = 48 * 1024;
+
+/**
+ * Whether `filter` is too big to save (see MAX_FILTER_BYTES), measured as
+ * its save request's body: `{ "filter": … }` in UTF-8.
+ */
+export const filterTooBig = (filter) => new TextEncoder().encode(JSON.stringify({ filter })).length > MAX_FILTER_BYTES;
+
+/** What the user is told when filterTooBig is true. */
+export const FILTER_TOO_BIG = 'This filter is too big to save. Use fewer conditions or values.';
+
 const ANY_TYPE = ['string', 'number', 'boolean', 'mixed'];
 const TEXT = ['string', 'mixed'];
 const NUMBER = ['number'];

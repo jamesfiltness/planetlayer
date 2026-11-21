@@ -1,8 +1,8 @@
 import { conditionProblem, filterOp, opsForType } from '../../../shared/filter.js';
 import FilterValueInput from './FilterValueInput.jsx';
+import { FIELD } from './fieldClass.js';
 import { CloseIcon } from './icons.jsx';
 
-const FIELD = 'rounded-md border border-edge px-2 py-1.5';
 
 // The value a condition starts with for each shape of value (see FILTER_OPS).
 const BLANK = { none: null, one: '', two: ['', ''], many: [] };

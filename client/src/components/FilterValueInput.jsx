@@ -1,9 +1,9 @@
 import { useId } from 'react';
 import { filterOp } from '../../../shared/filter.js';
+import { FIELD } from './fieldClass.js';
 import NumberInput from './NumberInput.jsx';
 import ValueChecklist from './ValueChecklist.jsx';
 
-const FIELD = 'rounded-md border border-edge px-2 py-1.5';
 
 /**
  * Whether a condition on this property, with this operator, takes numbers.

@@ -103,6 +103,18 @@ describe('tools', () => {
     test('unknown unit', () => rejects('buffer', { layer: layer.points.id, distance: 1, unit: 'parsec' }, /Unknown unit/));
     test('negative buffer on points', () => rejects('buffer', { layer: layer.points.id, distance: -1, unit: 'km' }, /negative/));
     test('a JSON body that is not an object', () => rejects('centroid', 'nope', /JSON object/));
+    test('merge sent as text', () => rejects('buffer', { layer: layer.points.id, distance: 1, unit: 'km', merge: 'false' }, /true or false/));
+    test('a name over 200 characters', () => rejects('centroid', { layer: layer.areas.id, name: 'x'.repeat(201) }, /at most 200/));
+  });
+
+  test("a made-up name that's too long is cut short, not refused", async () => {
+    const { createLayer } = await import('../layers.js');
+    const long = await createLayer(db.pool, map.id, 'y'.repeat(250), 'polygon');
+    assert.equal(Array.from(long.name).length, 200);
+    assert.ok(long.name.endsWith('…'));
+    await db.pool.query('INSERT INTO features (layer_id, geom) VALUES ($1, ST_MakeEnvelope(0, 0, 1, 1, 4326))', [long.id]);
+    const out = await run('centroid', { layer: long.id });
+    assert.equal(Array.from(out.name).length, 200);
   });
 
   test('a tool that produces nothing leaves no empty layer behind', async () => {
