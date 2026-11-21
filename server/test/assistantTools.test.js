@@ -44,6 +44,16 @@ describe('maps and layers', () => {
     assert.equal(opened.layers[0].style.type, 'single');
   });
 
+  test('duplicate_map copies the layers into a new map, leaving the original as it was', async () => {
+    const { map } = await pumpsMap();
+    const { map: copy } = await call('duplicate_map', { map_id: map.id, name: 'Water (copy)' });
+    assert.notEqual(copy.id, map.id);
+    assert.deepEqual([copy.name, copy.layer_count], ['Water (copy)', 2]);
+    const layers = async (id) => (await call('get_map', { map_id: id })).layers.map((l) => [l.name, l.shape, l.count]);
+    assert.deepEqual(await layers(copy.id), await layers(map.id));
+    await assert.rejects(call('duplicate_map', { map_id: 999999, name: 'Nope' }), status(404));
+  });
+
   test('add_features names the layer as asked, even with a slash, and stores numbers written as text as numbers', async () => {
     const { map } = await call('create_map', { name: 'Names' });
     const { layers: [layer] } = await call('add_features', {

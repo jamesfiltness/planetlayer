@@ -1,5 +1,6 @@
-// Tools for maps: listing, creating, renaming and opening one.
+// Tools for maps: listing, creating, renaming, duplicating and opening one.
 import * as z from 'zod';
+import { duplicateMap } from '../../duplicateMap.js';
 import { listLayers } from '../../layers.js';
 import { createMap, getMap, listMaps, renameMap } from '../../maps.js';
 import { MAX_MAP_NAME } from '../../../shared/limits.js';
@@ -45,5 +46,15 @@ export const mapTools = [
     description: 'Renames a map.',
     input: { map_id: mapId, name: mapName },
     run: async ({ map_id, name }) => ({ map: mapSummary(await renameMap(map_id, name)) }),
+  },
+  {
+    name: 'duplicate_map',
+    title: 'Duplicate a map',
+    description:
+      'Copies a map into a new map with its own copy of every layer: features, filters and styles, in the same order. '
+      + 'The two maps are independent afterwards, so use this to try changes without touching the original. '
+      + 'The copy\'s layers have new ids: call get_map on the copy before working on them.',
+    input: { map_id: mapId, name: mapName.describe(`A name for the copy, at most ${MAX_MAP_NAME} characters, such as "<name> (copy)".`) },
+    run: async ({ map_id, name }) => ({ map: mapSummary(await duplicateMap(map_id, name)) }),
   },
 ];
