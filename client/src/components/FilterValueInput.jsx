@@ -3,7 +3,7 @@ import { filterOp } from '../../../shared/filter.js';
 import NumberInput from './NumberInput.jsx';
 import ValueChecklist from './ValueChecklist.jsx';
 
-const FIELD = 'rounded-md border border-gray-300 px-2 py-1.5';
+const FIELD = 'rounded-md border border-edge px-2 py-1.5';
 
 /**
  * Whether a condition on this property, with this operator, takes numbers.
@@ -40,7 +40,7 @@ export default function FilterValueInput({ op: opId, field, value, onChange }) {
       return (
         <div className="flex items-center gap-1.5">
           <NumberInput className={`${FIELD} flex-1`} value={value[0]} onChange={(v) => onChange([v, value[1]])} aria-label="From" />
-          <span className="text-gray-500">and</span>
+          <span className="text-ink-faint">and</span>
           <NumberInput className={`${FIELD} flex-1`} value={value[1]} onChange={(v) => onChange([value[0], v])} aria-label="To" />
         </div>
       );

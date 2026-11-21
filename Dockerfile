@@ -4,7 +4,6 @@ COPY client/package*.json ./
 RUN npm ci
 COPY shared ../shared
 COPY client .
-ARG VITE_TILES
 RUN npm run build
 
 FROM node:24-alpine

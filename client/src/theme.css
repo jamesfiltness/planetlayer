@@ -1,0 +1,87 @@
+/* The app's colours, as Tailwind design tokens: `bg-surface`, `text-ink-faint`,
+   `border-edge` and so on. Components only ever use these names, never a
+   palette colour such as `gray-500`, so that the whole app changes with the
+   theme.
+
+   The values in `@theme` are the light ones. A dark theme (see
+   shared/themes.js) sets `data-theme="dark"` on <html>, and the block after
+   `@theme` swaps every token for its dark value. The dark values are
+   PlanetLayer's: near-black surfaces with no hue in them under cream ink, and
+   cream as the accent, with navy as the text on it.
+
+   What each token is for:
+     page          the window behind everything, and the map before it loads
+     surface       cards, menus, dialogs, popups
+     float         the translucent panels and header over a map (.chrome-float)
+     hover         the wash behind a hovered or selected row or button
+     hairline      dividers inside a card
+     edge          borders of fields and controls
+     ink           text; ink-muted, ink-faint and ink-ghost step down from it,
+                   ghost being for disabled things and icons at rest
+     brand         the wordmark
+     accent        the primary button, focus and selection; on-accent is text on it
+     danger        a destructive button; danger-text and danger-wash are for
+                   error messages, warning-text for a softer warning
+     scrim         the shade behind a modal */
+@theme {
+  --color-page: #f9fafb;
+  --color-surface: #ffffff;
+  --color-float: rgb(255 255 255 / 0.72);
+  --color-hover: #eeeeff;
+  --color-hairline: #e5e7eb;
+  --color-edge: #d1d5db;
+  --color-ink: #222222;
+  --color-ink-muted: #4b5563;
+  --color-ink-faint: #6b7280;
+  --color-ink-ghost: #9ca3af;
+  --color-brand: #16233a;
+  --color-accent: #4363d8;
+  --color-on-accent: #ffffff;
+  --color-danger: #dc2626;
+  --color-danger-text: #b91c1c;
+  --color-danger-wash: #fef2f2;
+  --color-warning-text: #b45309;
+  --color-scrim: rgb(0 0 0 / 0.3);
+}
+
+/* The shadow under menus, dialogs and the panels over a map. Not a `@theme`
+   token like the colours: Tailwind copies a theme shadow's value into the
+   `shadow-*` class instead of referring to the variable, so the dark value
+   below would never reach it. A plain variable and a utility of our own do.
+   In the base layer like the dark values, which win by being more specific. */
+@layer base {
+  :root {
+    --shadow-panel: 0 4px 16px rgb(0 0 0 / 0.2);
+  }
+}
+@utility shadow-panel {
+  box-shadow: var(--shadow-panel);
+}
+
+/* In the base layer, which comes after the theme layer, so these win over the
+   values above whatever their selectors' specificity. */
+@layer base {
+  :root[data-theme='dark'] {
+    /* Native controls (scrollbars, checkboxes, the colour picker) go dark too. */
+    color-scheme: dark;
+    --color-page: #0c0c0e;
+    --color-surface: #17181b;
+    --color-float: rgb(23 24 27 / 0.86);
+    --color-hover: rgb(244 242 236 / 0.08);
+    --color-hairline: #222327;
+    --color-edge: #3a3b41;
+    --color-ink: #f4f2ec;
+    --color-ink-muted: #b5b7bd;
+    --color-ink-faint: #9a9ca3;
+    --color-ink-ghost: #707279;
+    --color-brand: #f4f2ec;
+    --color-accent: #f4f2ec;
+    --color-on-accent: #16233a;
+    --color-danger: #e5484d;
+    --color-danger-text: #f07378;
+    --color-danger-wash: rgb(229 72 77 / 0.14);
+    --color-warning-text: #e6a35f;
+    --color-scrim: rgb(0 0 0 / 0.6);
+    --shadow-panel: 0 10px 30px rgb(0 0 0 / 0.4);
+  }
+}

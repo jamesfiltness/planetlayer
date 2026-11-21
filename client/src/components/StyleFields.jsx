@@ -13,12 +13,12 @@ export function ColorField({ label, value, onChange }) {
   return (
     <label className="flex items-center gap-2">
       <span className="flex-1">{label}</span>
-      <span className="text-xs text-gray-500 uppercase">{value}</span>
+      <span className="text-xs text-ink-faint uppercase">{value}</span>
       <input
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-7 w-10 flex-none cursor-pointer rounded-md border border-gray-300 bg-white p-0.5"
+        className="h-7 w-10 flex-none cursor-pointer rounded-md border border-edge bg-surface p-0.5"
       />
     </label>
   );
@@ -40,7 +40,7 @@ export function SliderField({ label, value, max, step, format, onChange }) {
     <label className="flex flex-col gap-1">
       <span className="flex justify-between">
         {label}
-        <span className="text-gray-500">{format(value)}</span>
+        <span className="text-ink-faint">{format(value)}</span>
       </span>
       <input
         type="range"

@@ -21,7 +21,7 @@ export default function AddLayerButton({ onImport }) {
         title="Add layer"
         aria-label="Add layer"
         onClick={() => fileInput.current.click()}
-        className="flex-none cursor-pointer rounded-lg p-1.5 text-gray-600 hover:bg-hover"
+        className="flex-none cursor-pointer rounded-lg p-1.5 text-ink-muted hover:bg-hover"
       >
         <PlusIcon />
       </button>

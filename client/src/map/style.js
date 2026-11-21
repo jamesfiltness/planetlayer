@@ -1,19 +1,3 @@
-const TILES = import.meta.env.VITE_TILES ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-
-export const BASE_STYLE = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: [TILES],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    },
-  },
-  layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
-};
-
 export const SOURCE_PREFIX = 'layer-';
 
 export const sourceId = (layerId) => `${SOURCE_PREFIX}${layerId}`;

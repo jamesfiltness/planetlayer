@@ -4,7 +4,7 @@ export default function StatusBanner({ status, onDismiss }) {
     <div
       role={status.error ? 'alert' : 'status'}
       className={`absolute top-map-top left-1/2 z-10 flex w-max max-w-[min(560px,calc(100vw-32px))] -translate-x-1/2 items-start gap-2 rounded-xl py-2 pr-2 pl-3.5 shadow-panel
-        ${status.error ? 'bg-red-50 text-red-800' : 'bg-white'}`}
+        ${status.error ? 'bg-danger-wash text-danger-text' : 'bg-surface'}`}
     >
       <span className="flex-1 py-1 wrap-anywhere">{status.message}</span>
       <button
@@ -12,7 +12,7 @@ export default function StatusBanner({ status, onDismiss }) {
         aria-label="Dismiss"
         title="Dismiss"
         onClick={onDismiss}
-        className="flex-none cursor-pointer rounded-md px-2 py-1 text-lg leading-none opacity-60 hover:bg-black/5 hover:opacity-100"
+        className="flex-none cursor-pointer rounded-md px-2 py-1 text-lg leading-none opacity-60 hover:bg-hover hover:opacity-100"
       >
         ×
       </button>

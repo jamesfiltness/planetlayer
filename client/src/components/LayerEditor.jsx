@@ -6,7 +6,7 @@ import FilterTab from './FilterTab.jsx';
 import { CloseIcon } from './icons.jsx';
 import StyleTab from './StyleTab.jsx';
 
-const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-gray-500 outline-none data-focus:text-ink data-selected:border-accent data-selected:font-semibold data-selected:text-ink';
+const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-ink-faint outline-none data-focus:text-ink data-selected:border-accent data-selected:font-semibold data-selected:text-ink';
 
 /**
  * The floating editor for one layer, down the right side of the map. Its
@@ -40,14 +40,14 @@ export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSa
           title="Close"
           aria-label="Close the layer editor"
           onClick={onClose}
-          className="flex-none cursor-pointer rounded-lg p-2 text-gray-500 hover:bg-hover hover:text-ink"
+          className="flex-none cursor-pointer rounded-lg p-2 text-ink-faint hover:bg-hover hover:text-ink"
         >
           <CloseIcon />
         </button>
       </header>
 
       <TabGroup className="flex min-h-0 flex-col">
-        <TabList className="flex gap-4 border-b border-gray-200 px-3.5">
+        <TabList className="flex gap-4 border-b border-hairline px-3.5">
           <Tab className={TAB}>Style</Tab>
           <Tab className={TAB}>Filter</Tab>
         </TabList>

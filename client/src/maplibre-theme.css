@@ -1,0 +1,51 @@
+/* MapLibre draws its popups and attribution itself, in white with black text
+   (see maplibre-gl.css), so they're recoloured here with the theme's tokens
+   (see theme.css). In the components layer after MapLibre's own sheet, so
+   these win over its rules of the same specificity. */
+@layer components {
+  /* Popups: the feature popup (map/useFeaturePopup.js) builds its own table,
+     so that's styled here too rather than with classes. */
+  .maplibregl-popup-content {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-panel);
+  }
+  .maplibregl-popup-content table {
+    border-collapse: collapse;
+  }
+  .maplibregl-popup-content th {
+    text-align: left;
+    padding-right: 8px;
+    color: var(--color-ink-faint);
+    font-weight: normal;
+  }
+  .maplibregl-popup-close-button:hover {
+    background: var(--color-hover);
+  }
+
+  /* The popup's tip is a CSS triangle: one border coloured, pointing back at
+     the feature. Which border depends on the side the popup opened on, and
+     the top and bottom each have three anchors (top, top-left, top-right),
+     hence matching part of the class name. */
+  [class*='maplibregl-popup-anchor-top'] .maplibregl-popup-tip {
+    border-bottom-color: var(--color-surface);
+  }
+  [class*='maplibregl-popup-anchor-bottom'] .maplibregl-popup-tip {
+    border-top-color: var(--color-surface);
+  }
+  .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: var(--color-surface);
+  }
+  .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: var(--color-surface);
+  }
+
+  /* Attribution: the same translucent material as the panels over the map. */
+  .maplibregl-ctrl.maplibregl-ctrl-attrib {
+    background: var(--color-float);
+    color: var(--color-ink-muted);
+  }
+  .maplibregl-ctrl-attrib a {
+    color: inherit;
+  }
+}
