@@ -6,6 +6,11 @@ const SHAPE_ICONS = { point: PointsIcon, line: LineIcon, polygon: PolygonIcon };
 
 const ICON_BUTTON = 'flex-none cursor-pointer rounded-lg p-1.5 hover:bg-hover';
 
+// What a filtered layer's funnel says. The count is left out while it isn't
+// known (`matching` is null while a changed filter is being saved).
+const filterSummary = (layer) =>
+  layer.matching === null ? 'Filtered' : `Filtered: ${layer.matching} of ${layer.count} features shown`;
+
 /**
  * The floating list of a map's layers, down the left side below the header.
  * Each row shows the layer's shape (drawn in the layer's colour, so the panel
@@ -14,7 +19,7 @@ const ICON_BUTTON = 'flex-none cursor-pointer rounded-lg p-1.5 hover:bg-hover';
  * The plus beside the heading adds layers from files.
  *
  * @param {object} props
- * @param {Array<{ id: number, name: string, shape: string, style: object, filter: object | null, count: number, matching: number }>} props.layers
+ * @param {Array<{ id: number, name: string, shape: string, style: object, filter: object | null, count: number, matching: number | null }>} props.layers
  * @param {Set<number>} props.hidden ids of the layers currently hidden on the map
  * @param {(id: number) => void} props.onToggle shows a hidden layer, or hides a visible one
  * @param {number | null} props.editingId id of the layer open in the editor, if any
@@ -62,9 +67,9 @@ function LayerRow({ layer, visible, editing, onToggle, onEdit }) {
       </span>
       <span className={`min-w-0 flex-1 truncate ${visible ? '' : 'text-gray-400'}`} title={layer.name}>{layer.name}</span>
       {layer.filter && (
-        <span className="flex-none p-1.5 text-accent" title={`Filtered: ${layer.matching} of ${layer.count} features shown`}>
+        <span className="flex-none p-1.5 text-accent" title={filterSummary(layer)}>
           <FilterIcon size={14} />
-          <span className="sr-only">Filtered: {layer.matching} of {layer.count} features shown</span>
+          <span className="sr-only">{filterSummary(layer)}</span>
         </span>
       )}
 

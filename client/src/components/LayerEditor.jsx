@@ -14,7 +14,7 @@ const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-gray-50
  * button; below are its Style and Filter tabs.
  *
  * @param {object} props
- * @param {{ id: number, name: string, shape: string, count: number, matching: number, style: object, filter: object | null }} props.layer
+ * @param {{ id: number, name: string, shape: string, count: number, matching: number | null, style: object, filter: object | null }} props.layer
  * @param {(style: object) => void} props.onStyleChange called with the whole new style on every change
  * @param {(filter: object | null) => void} props.onFilterChange called with the whole new filter when it changes
  * @param {(filter: object, name: string) => Promise<boolean>} props.onSaveFiltered saves the matching features as a new layer

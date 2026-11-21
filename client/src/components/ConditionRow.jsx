@@ -17,21 +17,22 @@ function fits(value, op) {
 /**
  * One condition in the Filter tab: which property, how to compare it (only
  * the operators that suit the property's type are offered), and the value.
- * A condition that isn't finished says what's missing; it isn't applied
- * until it is.
+ * A condition that isn't finished isn't applied until it is, and says
+ * what's missing when `showProblem` is set.
  *
  * @param {object} props
  * @param {{ field: string, op: string, value: unknown }} props.condition
  * @param {object[]} props.fields the layer's property summaries, from useFieldSummaries
+ * @param {boolean} props.showProblem whether to say what's missing, if anything is
  * @param {(condition: object) => void} props.onChange called with the whole new condition
  * @param {() => void} props.onRemove
  */
-export default function ConditionRow({ condition, fields, onChange, onRemove }) {
+export default function ConditionRow({ condition, fields, showProblem, onChange, onRemove }) {
   const field = fields.find((f) => f.name === condition.field);
   const ops = opsForType(field?.type ?? 'string');
   // A saved condition whose property has since changed type keeps its operator.
   if (!ops.some((op) => op.id === condition.op)) ops.unshift(filterOp(condition.op));
-  const problem = conditionProblem(condition);
+  const problem = showProblem ? conditionProblem(condition) : null;
 
   // A new property keeps the operator if it still suits, else falls back to "is".
   const setField = (name) => {
@@ -73,7 +74,7 @@ export default function ConditionRow({ condition, fields, onChange, onRemove }) 
           <FilterValueInput key={`${condition.field}\n${condition.op}`} op={condition.op} field={field} value={condition.value} onChange={(value) => onChange({ ...condition, value })} />
         </>
       )}
-      {problem && <p className="text-xs text-amber-700">Not applied yet: {problem}</p>}
+      {problem && <p role="alert" className="text-xs text-amber-700">Not applied yet: {problem}</p>}
     </li>
   );
 }

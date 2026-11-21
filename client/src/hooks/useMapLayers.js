@@ -8,6 +8,8 @@ import { useDebouncedSaver } from './useDebouncedSaver.js';
  *
  * Each layer also gets a client-only `revision`, bumped whenever a new
  * filter has been saved, so the map knows to fetch its features again.
+ * Its `matching` is null from when its filter changes until that save is
+ * done (and stays null if the save fails).
  *
  * @param {number | string} mapId
  * @param {{ attempt: Function, fail: Function }} status from useStatus
@@ -62,8 +64,10 @@ export function useMapLayers(mapId, { attempt, fail }) {
       (error) => fail(`Couldn't save the layer's filter: ${error.message}`),
     );
   }, [fail]));
+  // Until then the count of matching features isn't known, so it's null
+  // rather than the last filter's count.
   const setLayerFilter = (id, filter) => {
-    update(id, { filter });
+    update(id, { filter, matching: null });
     filterSaver.save(id, filter);
   };
 

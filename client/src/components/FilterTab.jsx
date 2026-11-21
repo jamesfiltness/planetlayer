@@ -26,10 +26,13 @@ function toFilter(match, rows) {
  *
  * Its rows are a draft, kept here so unfinished ones survive. Whenever the
  * finished ones add up to a different filter, it's passed to `onChange`.
+ * An unfinished row stays quiet while it's being filled in: it only says
+ * what's missing once saving as a new layer has been tried with it there.
  * Key it on the layer's id, so another layer starts from its own filter.
  *
  * @param {object} props
- * @param {{ id: number, count: number, matching: number, filter: object | null }} props.layer
+ * @param {{ id: number, count: number, matching: number | null, filter: object | null }} props.layer
+ *   `matching` is null while a changed filter is being saved
  * @param {(filter: object | null) => void} props.onChange
  * @param {(filter: object, name: string) => Promise<boolean>} props.onSaveAsLayer resolves to whether it worked
  */
@@ -38,6 +41,8 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
   const [match, setMatch] = useState(layer.filter?.match ?? 'all');
   const [rows, setRows] = useState(() => (layer.filter?.conditions ?? []).map(withKey));
   const sent = useRef(JSON.stringify(layer.filter ?? null));
+  // Keys of the rows that were unfinished when a save was last tried.
+  const [flagged, setFlagged] = useState(() => new Set());
   const filter = toFilter(match, rows);
 
   const apply = (nextMatch, nextRows) => {
@@ -49,13 +54,22 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
     onChange(next);
   };
 
+  // Saves the matching features as a new layer, unless a row is unfinished:
+  // then those rows are flagged to show what's missing, and nothing is saved.
+  const save = async (name) => {
+    const unfinished = rows.filter(conditionProblem);
+    if (!unfinished.length) return onSaveAsLayer(filter, name);
+    setFlagged(new Set(unfinished.map((row) => row.key)));
+    return false;
+  };
+
   if (error) return <p className="text-red-700">Couldn't read the layer's properties: {error}</p>;
   if (!fields) return <p className="text-gray-500">Reading the layer's properties…</p>;
   if (!fields.length) return <p className="text-gray-500">This layer's features have no properties to filter by.</p>;
 
   return (
     <div className="flex flex-col gap-3">
-      {rows.length > 1 ? (
+      {rows.length > 1 && (
         <div className="flex items-center gap-2">
           <span>Show features matching</span>
           <div role="group" aria-label="Match" className="flex rounded-lg border border-gray-300 p-0.5">
@@ -72,8 +86,6 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
             ))}
           </div>
         </div>
-      ) : (
-        <p className="text-gray-500">Show only the features whose properties match conditions.</p>
       )}
 
       {rows.length > 0 && (
@@ -83,6 +95,7 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
               key={row.key}
               condition={row}
               fields={fields}
+              showProblem={flagged.has(row.key)}
               onChange={(changed) => apply(match, rows.map((r) => (r.key === row.key ? changed : r)))}
               onRemove={() => apply(match, rows.filter((r) => r.key !== row.key))}
             />
@@ -101,12 +114,14 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
         {rows.length > 0 && <Button onClick={() => apply(match, [])}>Clear</Button>}
       </div>
 
-      <p aria-live="polite" className="text-gray-500">
-        {layer.filter ? `Showing ${layer.matching} of ${layer.count} features` : `Showing all ${layer.count} features`}
-      </p>
+      {layer.filter && (
+        <p aria-live="polite" className="text-gray-500">
+          Showing {layer.matching ?? '…'} of {layer.count} features
+        </p>
+      )}
 
       <hr className="border-gray-200" />
-      <SaveAsLayerForm disabled={!filter || layer.matching === 0} onSave={(name) => onSaveAsLayer(filter, name)} />
+      <SaveAsLayerForm disabled={!rows.length || (layer.filter && layer.matching === 0)} onSave={save} />
     </div>
   );
 }
