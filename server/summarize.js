@@ -23,36 +23,36 @@ const AGGREGATE = {
 const CENTRE = 'CASE WHEN ST_Intersects(ST_Centroid(b.geom), b.geom) THEN ST_Centroid(b.geom) ELSE ST_PointOnSurface(b.geom) END';
 
 /**
- * The tool's SQL, in the shape the other tools in tools.js use. Each area
- * keeps its own properties and gains `count`, plus `<field>_<stat>` (such as
+ * The tool's SQL, built like the others in toolSql.js. Each area keeps its
+ * own properties and gains `count`, plus `<field>_<stat>` (such as
  * `pop_est_sum`) when a field is given. Only values stored as numbers are
  * used, as in filters; text, true/false and missing values are skipped.
  *
  * @param {{ areas: object, features: object }} picked the two layers
  * @param {{ field?: string, stat?: string }} params a blank field just counts
+ * @param {(value: unknown) => string} bind
  */
-export function summarizeSql({ areas: a, features: b }, { field = '', stat = 'sum' }) {
+export function summarizeSql({ areas: a, features: b }, { field = '', stat = 'sum' }, bind) {
   if (typeof field !== 'string') throw badRequest('Pick a property to add up, or none to just count.');
   if (field && !STATS.includes(stat)) throw badRequest(`Pick how to add it up: ${STATS.join(', ')}.`);
 
-  // The bounding-box test (&&) lets the (layer_id, geom) index find the
-  // candidates: a feature whose centre is inside an area must overlap its box.
-  const inside = `b.layer_id = $2 AND b.geom && a.geom AND ST_Intersects(a.geom, ${CENTRE})`;
-  const args = [a.id, b.id];
   let value = "'{}'::jsonb";
   let aggregate = 'NULL::float8';
   if (field) {
-    args.push(field, `${field}_${stat}`);
-    value = 'jsonb_build_object($4::text, s.v)';
-    aggregate = AGGREGATE[stat]("CASE WHEN jsonb_typeof(b.props->$3::text) = 'number' THEN (b.props->>$3::text)::float8 END");
+    const key = bind(field);
+    value = `jsonb_build_object(${bind(`${field}_${stat}`)}::text, s.v)`;
+    aggregate = AGGREGATE[stat](`CASE WHEN jsonb_typeof(b.props->${key}::text) = 'number' THEN (b.props->>${key}::text)::float8 END`);
   }
+  // The bounding-box test (&&) lets the (layer_id, geom) index find the
+  // candidates: a feature whose centre is inside an area must overlap its box.
   return {
     name: `${a.name} ${b.name} summary`,
     shape: 'polygon',
-    args,
     sql: `SELECT a.geom, a.props || jsonb_build_object('count', s.n) || ${value} AS props
-          FROM features a
-          CROSS JOIN LATERAL (SELECT count(*) AS n, ${aggregate} AS v FROM features b WHERE ${inside}) s
-          WHERE a.layer_id = $1`,
+          FROM ${a.rows} a
+          CROSS JOIN LATERAL (
+            SELECT count(*) AS n, ${aggregate} AS v FROM ${b.rows} b
+            WHERE b.geom && a.geom AND ST_Intersects(a.geom, ${CENTRE})
+          ) s`,
   };
 }

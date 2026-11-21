@@ -1,114 +1,25 @@
-import { SHAPES, TOOLS, UNITS } from '../shared/spec.js';
+// Running an analysis tool: checking the request, loading the layers it
+// picks, and storing what the tool's SQL (toolSql.js) produces as a new layer
+// in the same map, all in one transaction.
+import { TOOLS } from '../shared/spec.js';
 import { transaction } from './db.js';
 import { badRequest } from './errors.js';
+import { filterSql } from './filter/sql.js';
 import { createLayer } from './layers.js';
-import { summarizeSql } from './summarize.js';
+import { SQL } from './toolSql.js';
 import { parseId, parseLayerName } from './validation.js';
 
-// Stored geometries are made valid on import, so the tools use them as they
-// are and can lean on the (layer_id, geom) index.
-
-// ST_CollectionExtract type for each shape.
-const TYPE = Object.fromEntries(SHAPES.map((shape, i) => [shape, i + 1]));
-
-// Each tool returns the SELECT whose (geom, props) rows become the new layer.
-// Only constants go into the SQL; anything from the request goes in `args`.
-const SQL = {
-  buffer({ layer: a }, { distance, unit, merge = false }) {
-    if (!Object.hasOwn(UNITS, unit)) throw badRequest(`Unknown unit: ${unit}`);
-    // Strictly true or false: as text, "false" would be truthy and merge.
-    if (typeof merge !== 'boolean') throw badRequest('Merge must be true or false.');
-    const metres = Number(distance) * UNITS[unit];
-    if (!metres || Math.abs(metres) > 100_000) throw badRequest('Distance must be non-zero and at most 100 km.');
-    if (metres < 0 && a.shape !== 'polygon') throw badRequest('Only area layers can take a negative distance.');
-    const buffered = 'ST_Buffer(geom::geography, $2)::geometry';
-    return {
-      name: `${a.name} buffer`,
-      shape: 'polygon',
-      args: [a.id, metres],
-      sql: merge
-        ? `SELECT d.geom, '{}'::jsonb AS props
-           FROM (SELECT ST_Union(${buffered}) AS u FROM features WHERE layer_id = $1) x, ST_Dump(x.u) d`
-        : `SELECT ST_CollectionExtract(${buffered}, 3) AS geom, props FROM features WHERE layer_id = $1`,
-    };
-  },
-
-  intersect({ layer: a, areas: b }) {
-    return {
-      name: `${a.name} inside ${b.name}`,
-      shape: a.shape,
-      args: [a.id, b.id],
-      sql: `SELECT ST_CollectionExtract(ST_Intersection(a.geom, b.geom), ${TYPE[a.shape]}) AS geom, b.props || a.props AS props
-            FROM features a
-            JOIN features b ON b.layer_id = $2 AND ST_Intersects(a.geom, b.geom)
-            WHERE a.layer_id = $1`,
-    };
-  },
-
-  subtract({ layer: a, areas: b }) {
-    return {
-      name: `${a.name} outside ${b.name}`,
-      shape: a.shape,
-      args: [a.id, b.id],
-      sql: `SELECT CASE WHEN m.u IS NULL THEN a.geom
-                   ELSE ST_CollectionExtract(ST_Difference(a.geom, m.u), ${TYPE[a.shape]}) END AS geom,
-                   a.props
-            FROM features a
-            CROSS JOIN LATERAL (
-              SELECT ST_Union(b.geom) AS u FROM features b
-              WHERE b.layer_id = $2 AND ST_Intersects(a.geom, b.geom)
-            ) m
-            WHERE a.layer_id = $1`,
-    };
-  },
-
-  dissolve({ layer: a }, { field }) {
-    const merged = a.shape === 'line'
-      ? 'ST_LineMerge(ST_CollectionExtract(ST_Union(geom), 2))'
-      : 'ST_CollectionExtract(ST_Union(geom), 3)';
-    if (!field) {
-      return {
-        name: `${a.name} dissolved`,
-        shape: a.shape,
-        args: [a.id],
-        sql: `SELECT ${merged} AS geom, jsonb_build_object('count', count(*)) AS props FROM features WHERE layer_id = $1`,
-      };
-    }
-    if (typeof field !== 'string') throw badRequest('Pick a property to merge by.');
-    return {
-      name: `${a.name} dissolved by ${field}`,
-      shape: a.shape,
-      args: [a.id, field],
-      sql: `SELECT ${merged} AS geom, jsonb_build_object($2::text, v, 'count', count(*)) AS props
-            FROM (SELECT geom, props->>$2::text AS v FROM features WHERE layer_id = $1) s
-            GROUP BY v`,
-    };
-  },
-
-  summarize: summarizeSql,
-
-  centroid({ layer: a }) {
-    return {
-      name: `${a.name} centroids`,
-      shape: 'point',
-      args: [a.id],
-      sql: `SELECT CASE WHEN ST_Intersects(c.geom, f.geom) THEN c.geom ELSE ST_PointOnSurface(f.geom) END AS geom,
-                   f.props
-            FROM features f, ST_Centroid(f.geom) AS c(geom)
-            WHERE f.layer_id = $1`,
-    };
-  },
-
-  combine({ layer: a, other: b }) {
-    return {
-      name: `${a.name} + ${b.name}`,
-      shape: a.shape,
-      args: [a.id, b.id],
-      sql: 'SELECT geom, props FROM features WHERE layer_id IN ($1, $2)',
-    };
-  },
-};
-
+/**
+ * Runs tool `id` on layers of map `mapId` and returns the new layer.
+ *
+ * Each picked layer contributes only the features its filter lets through,
+ * so a tool works on what the map shows. The result is named after them,
+ * with "(filtered)" for a filtered layer, unless `params.name` is given.
+ *
+ * @param {number} mapId
+ * @param {string} id one of TOOLS in shared/spec.js
+ * @param {Record<string, unknown>} params the tool's fields, by key, and an optional `name`
+ */
 export async function runTool(mapId, id, params = {}) {
   const tool = TOOLS.find((t) => t.id === id);
   if (!tool || !Object.hasOwn(SQL, id)) throw badRequest(`Unknown tool: ${id}`);
@@ -116,23 +27,29 @@ export async function runTool(mapId, id, params = {}) {
   const custom = parseLayerName(params.name);
 
   return transaction(async (db) => {
+    // The query's parameters, shared by the layers' subqueries, the tool's
+    // own values and the new layer's id.
+    const args = [];
+    const bind = (value) => `$${args.push(value)}`;
+
     const picked = {};
     for (const field of tool.fields) {
       const shapes = field.shapes ?? (field.sameShapeAs && [picked[field.sameShapeAs].shape]);
-      if (shapes) picked[field.key] = await loadLayer(db, mapId, params[field.key], field.label, shapes);
+      if (shapes) picked[field.key] = withRows(await loadLayer(db, mapId, params[field.key], field.label, shapes), args);
     }
-    const { name, shape, args, sql } = SQL[id](picked, params);
+    const { name, shape, sql } = SQL[id](picked, params, bind);
     const layer = await createLayer(db, mapId, custom || name, shape);
 
-    // The new layer's id is bound after the tool's own parameters.
-    const target = `$${args.length + 1}`;
     const { rowCount } = await db.query(
       `INSERT INTO features (layer_id, geom, props)
-       SELECT ${target}, geom, props FROM (${sql}) r
+       SELECT ${bind(layer.id)}, geom, props FROM (${sql}) r
        WHERE geom IS NOT NULL AND NOT ST_IsEmpty(geom)`,
-      [...args, layer.id],
+      args,
     );
-    if (!rowCount) throw badRequest('That produced no features.');
+    if (!rowCount) {
+      const filtered = Object.values(picked).some((l) => l.filter);
+      throw badRequest(`That produced no features.${filtered ? ' Check the filters on the layers you picked.' : ''}`);
+    }
     return layer;
   });
 }
@@ -143,4 +60,12 @@ async function loadLayer(db, mapId, id, label, shapes) {
   if (!layer) throw badRequest(`Pick a layer for "${label}".`);
   if (!shapes.includes(layer.shape)) throw badRequest(`"${layer.name}" must be a ${shapes.join(' or ')} layer.`);
   return layer;
+}
+
+// The layer as the tools see it (see toolSql.js): `rows` is a subquery of the
+// features its filter lets through, and a filtered layer's name says so.
+function withRows(layer, args) {
+  const rows = `(SELECT f.id, f.geom, f.props FROM features f
+                 WHERE f.layer_id = $${args.push(layer.id)} AND ${filterSql(layer.filter, args)})`;
+  return { ...layer, rows, name: layer.filter ? `${layer.name} (filtered)` : layer.name };
 }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
+import { after, afterEach, before, describe, test } from 'node:test';
 import { collection, freshDatabase, point, square, upload } from './helpers.js';
 
 let db, map, importFile, runTool, run;
@@ -165,6 +165,41 @@ describe('tools', () => {
     await assert.rejects(runTool(other.id, 'centroid', { layer: layer.areas.id }), (error) => error.status === 400 && /Pick a layer/.test(error.message));
     const out = await run('centroid', { layer: layer.areas.id });
     assert.equal(out.map_id, map.id);
+  });
+
+  describe('use only the features a filter lets through', () => {
+    let saveLayerFilter;
+    before(async () => ({ saveLayerFilter } = await import('../layerFilter.js')));
+    const filter = (l, conditions) => saveLayerFilter(l.id, conditions && { match: 'all', conditions });
+    afterEach(async () => {
+      for (const l of [layer.points, layer.areas]) await filter(l, null);
+    });
+
+    test('buffer, naming the result after the filtered layer', async () => {
+      await filter(layer.points, [{ field: 'pop', op: 'gte', value: 10 }]);
+      const out = await run('buffer', { layer: layer.points.id, distance: 1, unit: 'km' });
+      assert.equal(out.name, 'points (filtered) buffer');
+      assert.deepEqual((await features(out)).map((f) => f.props.pop), [10, 20]);
+    });
+
+    test('summarize counts and adds up only the matching features', async () => {
+      await filter(layer.points, [{ field: 'pop', op: 'gte', value: 10 }]);
+      const out = await run('summarize', { areas: layer.areas.id, features: layer.points.id, field: 'pop', stat: 'sum' });
+      assert.deepEqual((await features(out)).map((f) => [f.props.name, f.props.count, f.props.pop_sum]), [['A', 2, 30], ['B', 1, 20], ['C', 0, 0]]);
+    });
+
+    test('combine, with only one of the layers filtered', async () => {
+      await filter(layer.areas, [{ field: 'kind', op: 'eq', value: 'x' }]);
+      const out = await run('combine', { layer: layer.areas.id, other: layer.more.id });
+      assert.equal(out.name, 'areas (filtered) + more');
+      assert.deepEqual((await features(out)).map((f) => f.props.name).sort(), ['A', 'B', 'D']);
+    });
+
+    test('a filter that lets nothing through says so', async () => {
+      await filter(layer.points, [{ field: 'pop', op: 'gt', value: 1000 }]);
+      await assert.rejects(run('buffer', { layer: layer.points.id, distance: 1, unit: 'km' }),
+        (error) => error.status === 400 && /Check the filters/.test(error.message));
+    });
   });
 
   test('new layers get stable colours from their id', async () => {

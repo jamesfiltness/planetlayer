@@ -43,7 +43,7 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
       return (
         <select className={FIELD} value={value} onChange={(e) => set(f.key, e.target.value)} required>
           <option value="">Choose…</option>
-          {candidates(f, params).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          {candidates(f, params).map((l) => <option key={l.id} value={l.id}>{l.name}{l.filter ? ' (filtered)' : ''}</option>)}
         </select>
       );
     }
