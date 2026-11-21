@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import ActionsMenu from './ActionsMenu.jsx';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
+import FilterTab from './FilterTab.jsx';
 import { CloseIcon } from './icons.jsx';
 import StyleTab from './StyleTab.jsx';
 
@@ -10,15 +11,17 @@ const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-gray-50
 /**
  * The floating editor for one layer, down the right side of the map. Its
  * header has the layer's name, a ⋯ menu for deleting the layer and a close
- * button; below are tabs of settings (only Style so far).
+ * button; below are its Style and Filter tabs.
  *
  * @param {object} props
- * @param {{ name: string, shape: string, count: number, style: object }} props.layer
+ * @param {{ id: number, name: string, shape: string, count: number, matching: number | null, style: object, filter: object | null }} props.layer
  * @param {(style: object) => void} props.onStyleChange called with the whole new style on every change
+ * @param {(filter: object | null) => void} props.onFilterChange called with the whole new filter when it changes
+ * @param {(filter: object, name: string) => Promise<boolean>} props.onSaveFiltered saves the matching features as a new layer
  * @param {() => Promise<void>} props.onDelete deletes the layer; a rejection is shown in the confirmation
  * @param {() => void} props.onClose
  */
-export default function LayerEditor({ layer, onStyleChange, onDelete, onClose }) {
+export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSaveFiltered, onDelete, onClose }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
@@ -46,10 +49,15 @@ export default function LayerEditor({ layer, onStyleChange, onDelete, onClose })
       <TabGroup className="flex min-h-0 flex-col">
         <TabList className="flex gap-4 border-b border-gray-200 px-3.5">
           <Tab className={TAB}>Style</Tab>
+          <Tab className={TAB}>Filter</Tab>
         </TabList>
         <TabPanels className="overflow-auto p-3.5">
           <TabPanel className="outline-none">
             <StyleTab shape={layer.shape} style={layer.style} onChange={onStyleChange} />
+          </TabPanel>
+          {/* Kept mounted while hidden, so unfinished conditions survive a look at Style. */}
+          <TabPanel unmount={false} className="outline-none">
+            <FilterTab key={layer.id} layer={layer} onChange={onFilterChange} onSaveAsLayer={onSaveFiltered} />
           </TabPanel>
         </TabPanels>
       </TabGroup>

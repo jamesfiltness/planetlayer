@@ -44,6 +44,8 @@ export const PencilIcon = () => (
   </Icon>
 );
 
+export const FilterIcon = ({ size }) => <Icon size={size}><path d="M3 4h18l-7 8.5V19l-4 2v-8.5Z" /></Icon>;
+
 // Layer shapes: one icon per value of SHAPES in shared/spec.js.
 
 export const PolygonIcon = () => <Icon><path d="M4 8.5 13 3l7.5 6.5-3 11.5H7Z" /></Icon>;

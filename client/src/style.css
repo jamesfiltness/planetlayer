@@ -35,3 +35,15 @@
     font-weight: normal;
   }
 }
+
+/* Every dropdown draws its own chevron, since the browser's sits tight against
+   the right edge once a select has a border. Unlayered, so the room it leaves
+   for the chevron wins over padding utilities such as `px-2`. */
+select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
