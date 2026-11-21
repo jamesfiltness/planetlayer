@@ -36,3 +36,9 @@ export const RAMPS = {
 
 /** The ramp a new colour scale starts with. */
 export const DEFAULT_RAMP = 'viridis';
+
+/**
+ * A heatmap's colours, from where points are sparsest to where they're
+ * densest. Where there are none at all, the map shows through.
+ */
+export const HEATMAP_COLORS = ['#2c7bb6', '#abd9e9', '#ffffbf', '#fdae61', '#d7191c'];

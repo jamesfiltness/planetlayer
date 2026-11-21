@@ -19,7 +19,7 @@ function fakeMap() {
   return {
     getStyle: () => ({ layers: layers.map(({ id, source }) => ({ id, source })), sources: Object.fromEntries(sources) }),
     getSource: (id) => sources.get(id),
-    addSource: vi.fn((id, spec) => sources.set(id, { ...spec, setData: vi.fn() })),
+    addSource: vi.fn((id, spec) => sources.set(id, { ...spec, setData: vi.fn(), setClusterOptions: vi.fn() })),
     removeSource: vi.fn((id) => {
       if (layers.some((l) => l.source === id)) throw new Error(`source ${id} is still in use`);
       sources.delete(id);
@@ -102,19 +102,28 @@ describe('syncLayers', () => {
     expect(map.addSource).toHaveBeenCalledTimes(2);
   });
 
-  test('new source options make the source afresh, with the same data', () => {
+  test("clustering is turned on, changed and off on the same source", () => {
     const map = fakeMap();
     const loaded = new Map();
     syncLayers(map, [layer(1, 'point')], new Set(), loaded);
-    const circles = { id: 'layer-1-dots', type: 'circle', source: 'layer-1', paint: {}, filter: ['has', 'point_count'] };
-    drawLayer.mockReturnValueOnce({ sourceOptions: { cluster: true }, styleLayers: [circles] });
+    const source = map.getSource('layer-1');
+    const clustered = (radius) => ({ ...STYLE, symbology: { type: 'cluster', radius } });
+
+    syncLayers(map, [layer(1, 'point', { style: clustered(50) })], new Set(), loaded);
+    expect(source.setClusterOptions).toHaveBeenLastCalledWith({ cluster: true, clusterRadius: 50, clusterMaxZoom: 14 });
+    expect(map.ids()).toEqual(['layer-1-cluster-circle', 'layer-1-cluster-clusters', 'layer-1-cluster-counts']);
+    expect(map.find('layer-1-cluster-circle').filter).toEqual(['!', ['has', 'point_count']]);
+
+    syncLayers(map, [layer(1, 'point', { style: clustered(50) })], new Set(), loaded);
+    expect(source.setClusterOptions).toHaveBeenCalledTimes(1);
+    expect(map.setFilter).toHaveBeenCalledWith('layer-1-cluster-clusters', ['has', 'point_count']);
+
+    syncLayers(map, [layer(1, 'point', { style: clustered(80) })], new Set(), loaded);
+    expect(source.setClusterOptions).toHaveBeenLastCalledWith({ cluster: true, clusterRadius: 80, clusterMaxZoom: 14 });
+
     syncLayers(map, [layer(1, 'point')], new Set(), loaded);
-    expect(map.removeSource).toHaveBeenCalledWith('layer-1');
-    expect(map.getSource('layer-1')).toMatchObject({ cluster: true, type: 'geojson', data: expect.stringMatching(/\/1\/geojson$/) });
-    expect(map.ids()).toEqual(['layer-1-dots']);
-    drawLayer.mockReturnValueOnce({ sourceOptions: { cluster: true }, styleLayers: [circles] });
-    syncLayers(map, [layer(1, 'point')], new Set(), loaded);
-    expect(map.removeSource).toHaveBeenCalledTimes(1);
-    expect(map.setFilter).toHaveBeenCalledWith('layer-1-dots', ['has', 'point_count']);
+    expect(source.setClusterOptions).toHaveBeenLastCalledWith({ cluster: false });
+    expect(map.ids()).toEqual(['layer-1-single-circle']);
+    expect(map.addSource).toHaveBeenCalledTimes(1);
   });
 });

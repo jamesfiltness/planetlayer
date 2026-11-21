@@ -115,6 +115,33 @@ describe('layer styles', () => {
     }
   });
 
+  test('points can be a heatmap, weighted by a number or not, or clustered', async () => {
+    const heatmaps = [
+      { type: 'heatmap', field: null, radius: 20, intensity: 1 },
+      { type: 'heatmap', field: 'depth', min: 0, max: 5, radius: 60, intensity: 0.1 },
+    ];
+    for (const symbology of [...heatmaps, { type: 'cluster', radius: 50 }]) {
+      await layers.saveLayerStyle(points.id, { ...STYLE, symbology });
+      assert.deepEqual((await listed(points.id)).style.symbology, symbology);
+      await assert.rejects(layers.saveLayerStyle(areas.id, { ...STYLE, symbology }), status(400));
+    }
+    // A heatmap with no weight drops a range it doesn't use.
+    await layers.saveLayerStyle(points.id, { ...STYLE, symbology: { ...heatmaps[0], min: 0, max: 1 } });
+    assert.deepEqual((await listed(points.id)).style.symbology, heatmaps[0]);
+  });
+
+  test("a heatmap or cluster style's settings must be in range", async () => {
+    const heatmap = { type: 'heatmap', field: null, radius: 20, intensity: 1 };
+    const bad = [
+      { ...heatmap, radius: 1 }, { ...heatmap, radius: 61 }, { ...heatmap, intensity: 0 }, { ...heatmap, intensity: 6 },
+      { ...heatmap, field: undefined }, { ...heatmap, field: 'depth' }, { ...heatmap, field: 'depth', min: 2, max: 1 },
+      { type: 'cluster', radius: 9 }, { type: 'cluster', radius: 101 }, { type: 'cluster' },
+    ];
+    for (const symbology of bad) {
+      await assert.rejects(layers.saveLayerStyle(points.id, { ...STYLE, symbology }), status(400), `accepted ${JSON.stringify(symbology)}`);
+    }
+  });
+
   test('a missing layer is a 404', async () => {
     await assert.rejects(layers.saveLayerStyle(999999, STYLE), status(404));
     await assert.rejects(layers.saveLayerStyle('nope', STYLE), status(404));

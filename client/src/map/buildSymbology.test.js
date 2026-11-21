@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { CATEGORY_PALETTE, DEFAULT_RAMP } from '../../../shared/colors.js';
-import { DEFAULT_SIZES } from '../../../shared/symbology.js';
+import { DEFAULT_CLUSTER_RADIUS, DEFAULT_HEATMAP, DEFAULT_SIZES } from '../../../shared/symbology.js';
 import { buildSymbology, startingField } from './buildSymbology.js';
 
 const summary = (name, type, values, extra = {}) =>
@@ -35,6 +35,18 @@ describe('buildSymbology', () => {
     expect(buildSymbology('size', field, { type: 'single' })).toEqual({ type: 'size', field: 'depth', min: 1, max: 9, ...DEFAULT_SIZES });
     expect(buildSymbology('size', field, { type: 'size', minSize: 5, maxSize: 30 })).toMatchObject({ minSize: 5, maxSize: 30 });
   });
+
+  test('a heatmap is weighted by a property or by nothing, keeping its settings', () => {
+    const field = summary('depth', 'number', [1, 9], { min: 1, max: 9 });
+    expect(buildSymbology('heatmap', undefined, { type: 'single' })).toEqual({ type: 'heatmap', field: null, ...DEFAULT_HEATMAP });
+    const previous = { type: 'heatmap', field: null, radius: 40, intensity: 2 };
+    expect(buildSymbology('heatmap', field, previous)).toEqual({ type: 'heatmap', field: 'depth', min: 1, max: 9, radius: 40, intensity: 2 });
+  });
+
+  test('a cluster style keeps its radius', () => {
+    expect(buildSymbology('cluster', undefined, { type: 'single' })).toEqual({ type: 'cluster', radius: DEFAULT_CLUSTER_RADIUS });
+    expect(buildSymbology('cluster', undefined, { type: 'cluster', radius: 70 }).radius).toBe(70);
+  });
 });
 
 describe('startingField', () => {
@@ -50,8 +62,9 @@ describe('startingField', () => {
     expect(startingField('categories', fields.slice(0, 1)).name).toBe('code');
   });
 
-  test('is undefined when nothing fits, or the type needs no property', () => {
+  test('is undefined when nothing fits, or the type needs no property or starts without one', () => {
     expect(startingField('scale', [fields[0]])).toBeUndefined();
     expect(startingField('single', fields)).toBeUndefined();
+    expect(startingField('heatmap', fields)).toBeUndefined();
   });
 });

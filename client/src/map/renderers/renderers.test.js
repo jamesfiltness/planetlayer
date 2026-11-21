@@ -4,6 +4,8 @@ import { expression } from '@maplibre/maplibre-gl-style-spec';
 import { describe, expect, test } from 'vitest';
 import { NO_VALUE_COLOR, OTHER_COLOR, RAMPS } from '../../../../shared/colors.js';
 import { categoryColor } from './categories.js';
+import { textOn } from './cluster.js';
+import { heatmapWeight } from './heatmap.js';
 import { scaleColor } from './scale.js';
 import { sizeRadius } from './size.js';
 
@@ -90,5 +92,33 @@ describe('sizeRadius', () => {
 
   test('with min and max the same, every number is halfway between the sizes', () => {
     expect(numberOf(sizeRadius({ field: 'n', min: 5, max: 5, minSize: 2, maxSize: 12 }), { n: 5 })).toBe(7);
+  });
+});
+
+describe('heatmapWeight', () => {
+  test('with no property, every point counts fully', () => {
+    expect(heatmapWeight({ field: null })).toBe(1);
+  });
+
+  test('with a property, a point counts from nothing at min to fully at max', () => {
+    const expr = heatmapWeight({ field: 'n', min: 10, max: 20 });
+    expect(numberOf(expr, { n: 10 })).toBe(0);
+    expect(numberOf(expr, { n: 15 })).toBe(0.5);
+    expect(numberOf(expr, { n: 30 })).toBe(1);
+    expect(numberOf(expr, { n: 'many' })).toBe(0);
+    expect(numberOf(expr, {})).toBe(0);
+  });
+
+  test('with min and max the same, every number counts fully', () => {
+    expect(numberOf(heatmapWeight({ field: 'n', min: 3, max: 3 }), { n: 3 })).toBe(1);
+  });
+});
+
+describe('textOn', () => {
+  test('is black on light colours and white on dark ones', () => {
+    expect(textOn('#ffffff')).toBe('#000000');
+    expect(textOn('#edc948')).toBe('#000000');
+    expect(textOn('#5b4bb7')).toBe('#ffffff');
+    expect(textOn('#000000')).toBe('#ffffff');
   });
 });

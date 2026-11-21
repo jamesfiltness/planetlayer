@@ -21,6 +21,15 @@
 //   at `min` to `maxSize` at `max` so that a circle's area, not its radius,
 //   follows the value. A point with no number is the smallest size, in
 //   NO_VALUE_COLOR.
+// - `heatmap` (points only): `{ field, radius, intensity }`, plus `min` and
+//   `max` when `field` isn't null. Points blur into a heatmap, each spreading
+//   over `radius` pixels; `intensity` brightens the whole of it. With no
+//   `field` every point counts the same; otherwise a point counts for more
+//   the higher its number, from nothing at `min` to fully at `max`, and a
+//   point with no number doesn't count.
+// - `cluster` (points only): `{ radius }`. Points closer together than
+//   `radius` pixels are drawn as one circle with their count, in the layer's
+//   fill colour, splitting apart as the map zooms in.
 
 import { SHAPES } from './spec.js';
 
@@ -39,6 +48,18 @@ export const SIZE_LIMITS = [1, 40];
 /** The radii a new `size` style starts with. */
 export const DEFAULT_SIZES = Object.freeze({ minSize: 3, maxSize: 15 });
 
+/** The range of a heatmap's settings, ends included: its radius in pixels and its intensity. */
+export const HEATMAP_LIMITS = { radius: [2, 60], intensity: [0.1, 5] };
+
+/** The settings a new heatmap starts with. */
+export const DEFAULT_HEATMAP = Object.freeze({ radius: 20, intensity: 1 });
+
+/** The range of a cluster style's radius, in pixels, ends included. */
+export const CLUSTER_LIMITS = [10, 100];
+
+/** The radius a new cluster style starts with. */
+export const DEFAULT_CLUSTER_RADIUS = 50;
+
 // Which of the layer's properties a type can use, judged from its summary
 // (see fieldSummaries in server/filter/fields.js). Categories need values
 // to list, and numbers only when they're few enough to be categories.
@@ -53,11 +74,13 @@ const fitsScale = (f) => f.type === 'number' && f.min !== null;
  * - `fits`: for a type that colours by a property, which properties it can
  *   use, given a property's summary; absent for one that needs none.
  * - `noField`: why the type can't be used when no property fits.
+ * - `optionalField`: whether it can also go without a property, so it's
+ *   offered even when none fits, and starts with none.
  * - `base`: which of the layer's other style values it draws with, besides
  *   the overall opacity, which every type uses: `fillColor`, `fillOpacity`
  *   and `outline` (the outline's colour and width).
  *
- * @type {Array<{ type: string, label: string, shapes: string[], fits?: (field: object) => boolean, noField?: string, base: string[] }>}
+ * @type {Array<{ type: string, label: string, shapes: string[], fits?: (field: object) => boolean, noField?: string, optionalField?: boolean, base: string[] }>}
  */
 export const SYMBOLOGY_TYPES = [
   { type: 'single', label: 'Single colour', shapes: SHAPES, base: ['fillColor', 'fillOpacity', 'outline'] },
@@ -73,6 +96,8 @@ export const SYMBOLOGY_TYPES = [
     type: 'size', label: 'Size', shapes: ['point'], base: ['fillColor', 'fillOpacity', 'outline'],
     fits: fitsScale, noField: 'No property holds numbers',
   },
+  { type: 'heatmap', label: 'Heatmap', shapes: ['point'], base: [], fits: fitsScale, optionalField: true },
+  { type: 'cluster', label: 'Cluster', shapes: ['point'], base: ['fillColor', 'fillOpacity', 'outline'] },
 ];
 
 /** The symbology a new layer gets: every feature in the layer's fill colour. */

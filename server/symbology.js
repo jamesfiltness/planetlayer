@@ -1,6 +1,7 @@
 import { RAMPS } from '../shared/colors.js';
 import {
-  categoryKey, MAX_CATEGORIES, MAX_CATEGORY_TEXT, MAX_FIELD_NAME, SIZE_LIMITS, symbologyType, SYMBOLOGY_TYPES,
+  categoryKey, CLUSTER_LIMITS, HEATMAP_LIMITS, MAX_CATEGORIES, MAX_CATEGORY_TEXT, MAX_FIELD_NAME, SIZE_LIMITS,
+  symbologyType, SYMBOLOGY_TYPES,
 } from '../shared/symbology.js';
 import { badRequest } from './errors.js';
 
@@ -43,6 +44,15 @@ const SETTINGS = {
     const { minSize, maxSize } = parseRange(value, 'minSize', 'maxSize', SIZE_LIMITS);
     return { type: 'size', field, min, max, minSize, maxSize };
   },
+
+  heatmap: (value) => {
+    const radius = parseNumber(value.radius, 'radius', HEATMAP_LIMITS.radius);
+    const intensity = parseNumber(value.intensity, 'intensity', HEATMAP_LIMITS.intensity);
+    if (value.field === null) return { type: 'heatmap', field: null, radius, intensity };
+    return { type: 'heatmap', field: parseField(value.field), ...parseRange(value, 'min', 'max'), radius, intensity };
+  },
+
+  cluster: (value) => ({ type: 'cluster', radius: parseNumber(value.radius, 'radius', CLUSTER_LIMITS) }),
 };
 
 /**
@@ -95,4 +105,10 @@ function parseRange(value, low, high, limits = [-Infinity, Infinity]) {
     throw badRequest(`The style's ${low} and ${high} must be numbers${within}, with ${low} no bigger than ${high}.`);
   }
   return { [low]: from, [high]: to };
+}
+
+// A number within `limits`, ends included.
+function parseNumber(n, name, [min, max]) {
+  if (!Number.isFinite(n) || n < min || n > max) throw badRequest(`The style's ${name} must be a number from ${min} to ${max}.`);
+  return n;
 }

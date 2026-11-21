@@ -39,7 +39,28 @@ const Size = () => (
   </Svg>
 );
 
-const ICONS = { single: SingleColour, categories: Categories, scale: ColourScale, size: Size };
+const Heatmap = () => (
+  <Svg>
+    <defs>
+      <radialGradient id="symbology-icon-heatmap">
+        <stop offset="0" stopColor="#d7191c" /><stop offset="0.45" stopColor="#fdae61" />
+        <stop offset="0.75" stopColor="#abd9e9" /><stop offset="1" stopColor="#2c7bb6" />
+      </radialGradient>
+    </defs>
+    <circle cx="8" cy="8" r="6.5" fill="url(#symbology-icon-heatmap)" />
+  </Svg>
+);
+
+const Cluster = () => (
+  <Svg>
+    <g className="text-ink-faint">
+      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="6" cy="8" r="1.3" fill="currentColor" /><circle cx="10" cy="8" r="1.3" fill="currentColor" />
+    </g>
+  </Svg>
+);
+
+const ICONS = { single: SingleColour, categories: Categories, scale: ColourScale, size: Size, heatmap: Heatmap, cluster: Cluster };
 
 /**
  * @param {object} props

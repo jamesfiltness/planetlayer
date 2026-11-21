@@ -1,6 +1,8 @@
 import { symbologyType } from '../../../shared/symbology.js';
 import { buildSymbology, startingField } from '../map/buildSymbology.js';
 import CategoriesLegend from './CategoriesLegend.jsx';
+import ClusterFields from './ClusterFields.jsx';
+import HeatmapFields from './HeatmapFields.jsx';
 import PropertyPicker from './PropertyPicker.jsx';
 import ScaleFields from './ScaleFields.jsx';
 import SizeFields from './SizeFields.jsx';
@@ -23,15 +25,16 @@ import StyleTypePicker from './StyleTypePicker.jsx';
  */
 export default function SymbologyFields({ shape, symbology, fillColor, summaries, onChange }) {
   const { type } = symbology;
-  const { fits } = symbologyType(type) ?? {};
+  const { fits, optionalField } = symbologyType(type) ?? {};
   const fields = summaries.fields;
   const field = fields?.find((f) => f.name === symbology.field);
 
-  // The menu disables a type no property fits, so `start` is only missing
-  // for a type that needs no property.
+  // The menu disables a type that needs a property when none fits, so
+  // `start` is only missing for a type that can go without one.
   const setType = (next) => {
     const start = startingField(next, fields ?? []);
-    if (next === type || (symbologyType(next)?.fits && !start)) return;
+    const entry = symbologyType(next);
+    if (next === type || (entry?.fits && !entry.optionalField && !start)) return;
     onChange(buildSymbology(next, start, symbology));
   };
 
@@ -39,11 +42,19 @@ export default function SymbologyFields({ shape, symbology, fillColor, summaries
     <>
       <StyleTypePicker shape={shape} value={type} summaries={summaries} onChange={setType} />
       {fits && fields && (
-        <PropertyPicker value={symbology.field} fields={fields} fits={fits} onChange={(f) => onChange(buildSymbology(type, f, symbology))} />
+        <PropertyPicker
+          value={symbology.field}
+          fields={fields}
+          fits={fits}
+          none={optionalField ? 'None: every point counts the same' : undefined}
+          onChange={(f) => onChange(buildSymbology(type, f, symbology))}
+        />
       )}
       {type === 'categories' && <CategoriesLegend categories={symbology.categories} field={field} />}
       {type === 'scale' && <ScaleFields symbology={symbology} onRampChange={(ramp) => onChange({ ...symbology, ramp })} />}
       {type === 'size' && <SizeFields symbology={symbology} color={fillColor} onChange={onChange} />}
+      {type === 'heatmap' && <HeatmapFields symbology={symbology} onChange={onChange} />}
+      {type === 'cluster' && <ClusterFields symbology={symbology} onChange={onChange} />}
     </>
   );
 }

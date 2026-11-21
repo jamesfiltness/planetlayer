@@ -8,10 +8,10 @@ import { SOURCE_PREFIX, sourceId } from './style.js';
  * adds new ones, restyles the rest, and shows or hides each.
  *
  * A layer's features are fetched again when its address changes (its
- * `revision` is bumped after a new filter is saved), and its source is made
- * afresh when the options it needs change (as turning clustering on or off
- * will). When its symbology type changes, its old style layers are removed
- * and the new type's added (see the rules in renderers/index.js).
+ * `revision` is bumped after a new filter is saved), and its source is
+ * regrouped when its clustering options change. When its symbology type
+ * changes, its old style layers are removed and the new type's added (see
+ * the rules in renderers/index.js).
  *
  * New style layers go on top, so whenever any are added, every layer's are
  * moved back into list order: the first layer at the bottom, the last on top.
@@ -53,17 +53,19 @@ function removeGone(map, wanted, loaded) {
   }
 }
 
-// Adds the source, makes it afresh if its options changed, or points it at
-// new data if only that changed.
+// Adds the source, or points it at new data and changes its clustering, if
+// either changed. `sourceOptions` only ever holds clustering options (see
+// renderers/index.js), which a source can change in place; with none, it
+// stops clustering.
 function syncSource(map, source, data, sourceOptions, loaded) {
   const options = JSON.stringify(sourceOptions);
   const last = loaded.get(source);
-  if (map.getSource(source) && last?.options !== options) {
-    removeStyleLayers(map, source);
-    map.removeSource(source);
+  const existing = map.getSource(source);
+  if (!existing) map.addSource(source, { ...sourceOptions, type: 'geojson', data });
+  else {
+    if (last?.data !== data) existing.setData(data);
+    if (last?.options !== options) existing.setClusterOptions({ cluster: false, ...sourceOptions });
   }
-  if (!map.getSource(source)) map.addSource(source, { ...sourceOptions, type: 'geojson', data });
-  else if (last.data !== data) map.getSource(source).setData(data);
   loaded.set(source, { data, options });
 }
 
