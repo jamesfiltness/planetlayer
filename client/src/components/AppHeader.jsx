@@ -28,14 +28,14 @@ export default function AppHeader({ floating, mapName }) {
       }`}
     >
       {/* The wordmark and the links don't shrink: the map's name is what gives,
-          by truncating. The wordmark is lowercase Manrope, "planet" in regular
-          and "layer" in bold, so the link's label carries the properly cased name. */}
+          by truncating. The wordmark is lowercase Manrope, "planet" in bold
+          and "layer" in regular, so the link's label carries the properly cased name. */}
       <Link
         to="/"
         aria-label="PlanetLayer home"
         className="flex-none text-[18px] leading-none font-bold tracking-[-0.03em] whitespace-nowrap text-brand"
       >
-        <span className="font-normal">planet</span>layer
+        planet<span className="font-normal">layer</span>
       </Link>
       <nav aria-label="Main" className="flex flex-none items-center gap-5">
         <Link to="/" aria-current={onMaps ? 'page' : undefined} className={NAV_LINK}>Maps</Link>
