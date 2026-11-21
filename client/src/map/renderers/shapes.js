@@ -11,12 +11,15 @@
  * @param {string} prefix the start of every style layer's id (see index.js)
  * @param {string} source the id of the source holding the layer's features
  * @param {string | unknown[]} color
+ * @param {object} [points] for a point layer only
+ * @param {number | unknown[]} [points.radius] each circle's radius in pixels, or an expression for it
+ * @param {object} [points.layout] layout properties for the circles, such as their drawing order
  */
-export function drawShapes({ shape, style }, prefix, source, color) {
+export function drawShapes({ shape, style }, prefix, source, color, { radius = 6, layout } = {}) {
   const { fillOpacity, outlineColor, outlineWidth, opacity } = style;
   if (shape === 'point') {
-    return [{ id: `${prefix}-circle`, type: 'circle', source, paint: {
-      'circle-color': color, 'circle-opacity': fillOpacity * opacity, 'circle-radius': 6,
+    return [{ id: `${prefix}-circle`, type: 'circle', source, ...(layout && { layout }), paint: {
+      'circle-color': color, 'circle-opacity': fillOpacity * opacity, 'circle-radius': radius,
       'circle-stroke-color': outlineColor, 'circle-stroke-width': outlineWidth, 'circle-stroke-opacity': opacity } }];
   }
   const line = (lineColor) => ({ id: `${prefix}-line`, type: 'line', source, paint: {
@@ -33,3 +36,6 @@ export function drawShapes({ shape, style }, prefix, source, color) {
  * don't have it, or it's null), and `otherwise` for the rest.
  */
 export const ifNoValue = (field, then, otherwise) => ['case', ['==', ['typeof', ['get', field]], 'null'], then, otherwise];
+
+/** An expression that's true for features whose `field` holds a number. */
+export const isNumber = (field) => ['==', ['typeof', ['get', field]], 'number'];

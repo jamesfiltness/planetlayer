@@ -3,6 +3,7 @@ import { buildSymbology, startingField } from '../map/buildSymbology.js';
 import CategoriesLegend from './CategoriesLegend.jsx';
 import PropertyPicker from './PropertyPicker.jsx';
 import ScaleFields from './ScaleFields.jsx';
+import SizeFields from './SizeFields.jsx';
 import StyleTypePicker from './StyleTypePicker.jsx';
 
 /**
@@ -16,10 +17,11 @@ import StyleTypePicker from './StyleTypePicker.jsx';
  * @param {object} props
  * @param {string} props.shape the layer's shape
  * @param {{ type: string, field?: string }} props.symbology
+ * @param {string} props.fillColor the layer's fill colour, which a size style draws with
  * @param {{ fields: object[] | null, error: string | null }} props.summaries from useFieldSummaries
  * @param {(symbology: object) => void} props.onChange called with the whole new symbology
  */
-export default function SymbologyFields({ shape, symbology, summaries, onChange }) {
+export default function SymbologyFields({ shape, symbology, fillColor, summaries, onChange }) {
   const { type } = symbology;
   const { fits } = symbologyType(type) ?? {};
   const fields = summaries.fields;
@@ -41,6 +43,7 @@ export default function SymbologyFields({ shape, symbology, summaries, onChange 
       )}
       {type === 'categories' && <CategoriesLegend categories={symbology.categories} field={field} />}
       {type === 'scale' && <ScaleFields symbology={symbology} onRampChange={(ramp) => onChange({ ...symbology, ramp })} />}
+      {type === 'size' && <SizeFields symbology={symbology} color={fillColor} onChange={onChange} />}
     </>
   );
 }

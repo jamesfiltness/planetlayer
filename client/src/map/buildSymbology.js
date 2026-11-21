@@ -1,5 +1,5 @@
 import { CATEGORY_PALETTE, DEFAULT_RAMP } from '../../../shared/colors.js';
-import { categoryKey, MAX_CATEGORIES, MAX_CATEGORY_TEXT, symbologyType } from '../../../shared/symbology.js';
+import { categoryKey, DEFAULT_SIZES, MAX_CATEGORIES, MAX_CATEGORY_TEXT, symbologyType } from '../../../shared/symbology.js';
 
 /**
  * The symbology of `type` for the layer's property `field`, as the Style tab
@@ -11,6 +11,8 @@ import { categoryKey, MAX_CATEGORIES, MAX_CATEGORY_TEXT, symbologyType } from '.
  *   is left to "other".
  * - `scale`: runs from the property's lowest value to its highest, with the
  *   ramp `previous` had if it was a colour scale too, else DEFAULT_RAMP.
+ * - `size`: likewise, with the circle sizes `previous` had if it was a size
+ *   style too, else DEFAULT_SIZES.
  *
  * @param {string} type
  * @param {{ name: string, min: number | null, max: number | null, values: Array<{ value: unknown }> } | undefined} field
@@ -23,6 +25,10 @@ export function buildSymbology(type, field, previous) {
       return { type, field: field.name, categories: pickCategories(field.values) };
     case 'scale':
       return { type, field: field.name, ramp: previous.type === 'scale' ? previous.ramp : DEFAULT_RAMP, min: field.min, max: field.max };
+    case 'size': {
+      const { minSize, maxSize } = previous.type === 'size' ? previous : DEFAULT_SIZES;
+      return { type, field: field.name, min: field.min, max: field.max, minSize, maxSize };
+    }
     default:
       return { type: 'single' };
   }

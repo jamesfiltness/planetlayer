@@ -5,8 +5,17 @@ import { describe, expect, test } from 'vitest';
 import { NO_VALUE_COLOR, OTHER_COLOR, RAMPS } from '../../../../shared/colors.js';
 import { categoryColor } from './categories.js';
 import { scaleColor } from './scale.js';
+import { sizeRadius } from './size.js';
 
 const COLOR_SPEC = { type: 'color', 'property-type': 'data-driven', expression: { interpolated: true, parameters: ['zoom', 'feature'] } };
+const NUMBER_SPEC = { ...COLOR_SPEC, type: 'number' };
+
+// The number `expr` gives a feature with these properties.
+function numberOf(expr, properties) {
+  const compiled = expression.createExpression(expr, NUMBER_SPEC);
+  if (compiled.result !== 'success') throw new Error(compiled.value.map((e) => e.message).join('; '));
+  return compiled.value.evaluate({ zoom: 0 }, { type: 'Point', properties });
+}
 
 // The colour `expr` gives a feature with these properties, as #rrggbb.
 function colorOf(expr, properties) {
@@ -60,5 +69,26 @@ describe('scaleColor', () => {
 
   test('with min and max the same, every number is the middle colour', () => {
     expect(colorOf(scaleColor({ field: 'n', ramp: 'blues', min: 2, max: 2 }), { n: 2 })).toBe(colors[2]);
+  });
+});
+
+describe('sizeRadius', () => {
+  const expr = sizeRadius({ field: 'n', min: 0, max: 100, minSize: 2, maxSize: 12 });
+
+  test("a circle's area, not its radius, grows in step with the value", () => {
+    expect(numberOf(expr, { n: 0 })).toBe(2);
+    expect(numberOf(expr, { n: 25 })).toBe(7); // sqrt(25) is halfway to sqrt(100)
+    expect(numberOf(expr, { n: 100 })).toBe(12);
+  });
+
+  test('values beyond the range stay at the ends, and no number is smallest', () => {
+    expect(numberOf(expr, { n: -50 })).toBe(2);
+    expect(numberOf(expr, { n: 400 })).toBe(12);
+    expect(numberOf(expr, { n: 'big' })).toBe(2);
+    expect(numberOf(expr, {})).toBe(2);
+  });
+
+  test('with min and max the same, every number is halfway between the sizes', () => {
+    expect(numberOf(sizeRadius({ field: 'n', min: 5, max: 5, minSize: 2, maxSize: 12 }), { n: 5 })).toBe(7);
   });
 });

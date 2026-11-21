@@ -79,6 +79,22 @@ describe('layer styles', () => {
     assert.deepEqual((await listed(track.id)).style.symbology, scale);
   });
 
+  test('points can be sized by a number, and only points', async () => {
+    const size = { type: 'size', field: 'depth', min: 0, max: 10, minSize: 1, maxSize: 40 };
+    await layers.saveLayerStyle(points.id, { ...STYLE, symbology: size });
+    assert.deepEqual((await listed(points.id)).style.symbology, size);
+    for (const layer of [areas, track]) {
+      await assert.rejects(layers.saveLayerStyle(layer.id, { ...STYLE, symbology: size }), status(400));
+    }
+    const bad = [
+      { ...size, minSize: 0 }, { ...size, maxSize: 41 }, { ...size, minSize: 9, maxSize: 8 },
+      { ...size, min: 5, max: 4 }, { ...size, field: undefined }, { ...size, maxSize: '20' },
+    ];
+    for (const symbology of bad) {
+      await assert.rejects(layers.saveLayerStyle(points.id, { ...STYLE, symbology }), status(400), `accepted ${JSON.stringify(symbology)}`);
+    }
+  });
+
   test("a categories or colour scale style's settings must be valid", async () => {
     const category = (value, color = '#112233') => ({ value, color });
     const many = Array.from({ length: 25 }, (_, i) => category(i));

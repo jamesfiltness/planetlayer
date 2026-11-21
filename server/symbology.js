@@ -1,6 +1,6 @@
 import { RAMPS } from '../shared/colors.js';
 import {
-  categoryKey, MAX_CATEGORIES, MAX_CATEGORY_TEXT, MAX_FIELD_NAME, symbologyType, SYMBOLOGY_TYPES,
+  categoryKey, MAX_CATEGORIES, MAX_CATEGORY_TEXT, MAX_FIELD_NAME, SIZE_LIMITS, symbologyType, SYMBOLOGY_TYPES,
 } from '../shared/symbology.js';
 import { badRequest } from './errors.js';
 
@@ -34,11 +34,14 @@ const SETTINGS = {
     if (typeof value.ramp !== 'string' || !Object.hasOwn(RAMPS, value.ramp)) {
       throw badRequest(`A colour scale's ramp must be one of ${Object.keys(RAMPS).join(', ')}.`);
     }
-    const { min, max } = value;
-    if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) {
-      throw badRequest("A colour scale's min and max must be numbers, with min no bigger than max.");
-    }
-    return { type: 'scale', field, ramp: value.ramp, min, max };
+    return { type: 'scale', field, ramp: value.ramp, ...parseRange(value, 'min', 'max') };
+  },
+
+  size: (value) => {
+    const field = parseField(value.field);
+    const { min, max } = parseRange(value, 'min', 'max');
+    const { minSize, maxSize } = parseRange(value, 'minSize', 'maxSize', SIZE_LIMITS);
+    return { type: 'size', field, min, max, minSize, maxSize };
   },
 };
 
@@ -80,4 +83,16 @@ function parseCategoryValue(value) {
   const ok = (typeof value === 'string' && value.length <= MAX_CATEGORY_TEXT) || typeof value === 'boolean' || Number.isFinite(value);
   if (!ok) throw badRequest(`Each category's value must be a number, true or false, or text of at most ${MAX_CATEGORY_TEXT} characters.`);
   return value;
+}
+
+// Two numbers `value[low]` and `value[high]`, with low no bigger than high,
+// and both within `limits` if given.
+function parseRange(value, low, high, limits = [-Infinity, Infinity]) {
+  const [from, to] = [value[low], value[high]];
+  const inLimits = (n) => Number.isFinite(n) && n >= limits[0] && n <= limits[1];
+  if (!inLimits(from) || !inLimits(to) || from > to) {
+    const within = Number.isFinite(limits[0]) ? ` from ${limits[0]} to ${limits[1]}` : '';
+    throw badRequest(`The style's ${low} and ${high} must be numbers${within}, with ${low} no bigger than ${high}.`);
+  }
+  return { [low]: from, [high]: to };
 }

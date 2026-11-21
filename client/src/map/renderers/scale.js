@@ -1,5 +1,5 @@
 import { NO_VALUE_COLOR, RAMPS } from '../../../../shared/colors.js';
-import { drawShapes } from './shapes.js';
+import { drawShapes, isNumber } from './shapes.js';
 
 /**
  * Colours each feature along a ramp by the number in its property (the
@@ -19,5 +19,5 @@ export function scaleColor({ field, ramp, min, max }) {
     ? colors[Math.floor(colors.length / 2)]
     : ['interpolate', ['linear'], ['get', field], ...colors.flatMap((c, i) => [min + ((max - min) * i) / (colors.length - 1), c])];
   // Only numbers are placed on the ramp; text, missing and null values aren't.
-  return ['case', ['==', ['typeof', ['get', field]], 'number'], color, NO_VALUE_COLOR];
+  return ['case', isNumber(field), color, NO_VALUE_COLOR];
 }

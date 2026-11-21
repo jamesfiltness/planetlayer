@@ -16,6 +16,11 @@
 // - `scale`: `{ field, ramp, min, max }`. A number in `field` is coloured
 //   along the ramp from `min` to `max`, staying at the ends beyond them;
 //   anything else is NO_VALUE_COLOR.
+// - `size` (points only): `{ field, min, max, minSize, maxSize }`. Points
+//   are the layer's fill colour, their radius growing from `minSize` pixels
+//   at `min` to `maxSize` at `max` so that a circle's area, not its radius,
+//   follows the value. A point with no number is the smallest size, in
+//   NO_VALUE_COLOR.
 
 import { SHAPES } from './spec.js';
 
@@ -27,6 +32,12 @@ export const MAX_CATEGORY_TEXT = 200;
 
 /** The most characters a property name can have, as in filters. */
 export const MAX_FIELD_NAME = 1000;
+
+/** The range of a `size` style's circle radii, in pixels, ends included. */
+export const SIZE_LIMITS = [1, 40];
+
+/** The radii a new `size` style starts with. */
+export const DEFAULT_SIZES = Object.freeze({ minSize: 3, maxSize: 15 });
 
 // Which of the layer's properties a type can use, judged from its summary
 // (see fieldSummaries in server/filter/fields.js). Categories need values
@@ -42,13 +53,26 @@ const fitsScale = (f) => f.type === 'number' && f.min !== null;
  * - `fits`: for a type that colours by a property, which properties it can
  *   use, given a property's summary; absent for one that needs none.
  * - `noField`: why the type can't be used when no property fits.
+ * - `base`: which of the layer's other style values it draws with, besides
+ *   the overall opacity, which every type uses: `fillColor`, `fillOpacity`
+ *   and `outline` (the outline's colour and width).
  *
- * @type {Array<{ type: string, label: string, shapes: string[], fits?: (field: object) => boolean, noField?: string }>}
+ * @type {Array<{ type: string, label: string, shapes: string[], fits?: (field: object) => boolean, noField?: string, base: string[] }>}
  */
 export const SYMBOLOGY_TYPES = [
-  { type: 'single', label: 'Single colour', shapes: SHAPES },
-  { type: 'categories', label: 'Categories', shapes: SHAPES, fits: fitsCategories, noField: 'No property has few enough values' },
-  { type: 'scale', label: 'Colour scale', shapes: SHAPES, fits: fitsScale, noField: 'No property holds numbers' },
+  { type: 'single', label: 'Single colour', shapes: SHAPES, base: ['fillColor', 'fillOpacity', 'outline'] },
+  {
+    type: 'categories', label: 'Categories', shapes: SHAPES, base: ['fillOpacity', 'outline'],
+    fits: fitsCategories, noField: 'No property has few enough values',
+  },
+  {
+    type: 'scale', label: 'Colour scale', shapes: SHAPES, base: ['fillOpacity', 'outline'],
+    fits: fitsScale, noField: 'No property holds numbers',
+  },
+  {
+    type: 'size', label: 'Size', shapes: ['point'], base: ['fillColor', 'fillOpacity', 'outline'],
+    fits: fitsScale, noField: 'No property holds numbers',
+  },
 ];
 
 /** The symbology a new layer gets: every feature in the layer's fill colour. */

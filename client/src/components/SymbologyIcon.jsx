@@ -31,7 +31,15 @@ const ColourScale = () => (
   </Svg>
 );
 
-const ICONS = { single: SingleColour, categories: Categories, scale: ColourScale };
+const Size = () => (
+  <Svg>
+    <g className="fill-ink-faint">
+      <circle cx="5" cy="4.5" r="2" /><circle cx="10.5" cy="10" r="4" /><circle cx="3.5" cy="12" r="1.5" />
+    </g>
+  </Svg>
+);
+
+const ICONS = { single: SingleColour, categories: Categories, scale: ColourScale, size: Size };
 
 /**
  * @param {object} props

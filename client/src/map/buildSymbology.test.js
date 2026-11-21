@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { CATEGORY_PALETTE, DEFAULT_RAMP } from '../../../shared/colors.js';
+import { DEFAULT_SIZES } from '../../../shared/symbology.js';
 import { buildSymbology, startingField } from './buildSymbology.js';
 
 const summary = (name, type, values, extra = {}) =>
@@ -27,6 +28,12 @@ describe('buildSymbology', () => {
     const field = summary('depth', 'number', [1, 9], { min: 1, max: 9 });
     expect(buildSymbology('scale', field, { type: 'single' })).toEqual({ type: 'scale', field: 'depth', ramp: DEFAULT_RAMP, min: 1, max: 9 });
     expect(buildSymbology('scale', field, { type: 'scale', ramp: 'reds' }).ramp).toBe('reds');
+  });
+
+  test("sizes span the property's range, keeping a previous size style's sizes", () => {
+    const field = summary('depth', 'number', [1, 9], { min: 1, max: 9 });
+    expect(buildSymbology('size', field, { type: 'single' })).toEqual({ type: 'size', field: 'depth', min: 1, max: 9, ...DEFAULT_SIZES });
+    expect(buildSymbology('size', field, { type: 'size', minSize: 5, maxSize: 30 })).toMatchObject({ minSize: 5, maxSize: 30 });
   });
 });
 

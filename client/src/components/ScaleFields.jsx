@@ -1,5 +1,6 @@
 import { NO_VALUE_COLOR, RAMPS } from '../../../shared/colors.js';
 import Dropdown from './Dropdown.jsx';
+import { formatNumber } from './formatNumber.js';
 
 const gradient = (colors) => `linear-gradient(to right, ${colors.join(', ')})`;
 
@@ -8,9 +9,6 @@ const RampSwatch = ({ colors }) => (
 );
 
 const RAMP_OPTIONS = Object.entries(RAMPS).map(([value, { label, colors }]) => ({ value, label, picture: <RampSwatch colors={colors} /> }));
-
-// Up to four significant figures, in the reader's own number format.
-const formatNumber = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }).format;
 
 /**
  * A colour scale's settings: its ramp, and a legend of the ramp from the
