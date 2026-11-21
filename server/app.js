@@ -2,7 +2,9 @@
 import express from 'express';
 import path from 'node:path';
 import { notFound } from './errors.js';
+import { errorHandler } from './http/errorHandler.js';
 import { hostGuard, parseAllowedHosts } from './http/hostGuard.js';
+import { securityHeaders } from './http/securityHeaders.js';
 import { layersRouter } from './routes/layers.js';
 import { mapsRouter } from './routes/maps.js';
 import { settingsRouter } from './routes/settings.js';
@@ -11,8 +13,11 @@ const DEFAULT_CLIENT_DIR = path.join(import.meta.dirname, '../client/dist');
 
 export function createApp({ clientDir = DEFAULT_CLIENT_DIR, allowedHosts = parseAllowedHosts(process.env.ALLOWED_HOSTS) } = {}) {
   const app = express();
+  app.disable('x-powered-by');
 
-  // Before anything else, so a refused request never reaches the API or files.
+  // Before anything else, so a refused request never reaches the API or files,
+  // and every response (refusals included) carries the security headers.
+  app.use(securityHeaders);
   app.use(hostGuard(allowedHosts));
   app.use(express.json());
 
@@ -26,12 +31,7 @@ export function createApp({ clientDir = DEFAULT_CLIENT_DIR, allowedHosts = parse
   // gets index.html. This is what lets a map's address be reloaded or shared.
   app.get('/{*path}', (req, res) => res.sendFile(path.join(clientDir, 'index.html')));
 
-  // Errors with a status (see errors.js) are expected and meant for the user;
-  // anything else is a bug, logged here and reported as a 500.
-  app.use((error, req, res, next) => {
-    if (!error.status) console.error(error);
-    res.status(error.status ?? 500).json({ error: error.message });
-  });
+  app.use(errorHandler);
 
   return app;
 }

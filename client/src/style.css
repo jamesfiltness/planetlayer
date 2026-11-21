@@ -1,4 +1,12 @@
 @import "tailwindcss";
+/* Manrope, which sets the app header (font-brand below). Bundled with the app
+   rather than loaded from Google Fonts, so opening the app tells no other site
+   about it, and the header looks the same offline. Each weight's files are
+   split by alphabet, and the browser only downloads the ones a page uses. */
+@import "@fontsource/manrope/400.css";
+@import "@fontsource/manrope/500.css";
+@import "@fontsource/manrope/600.css";
+@import "@fontsource/manrope/700.css";
 /* In the components layer, below Tailwind's utilities, so utility classes on
    the map container win. Unlayered, MapLibre's rules (such as
    `.maplibregl-map { position: relative }`) would beat every utility. */

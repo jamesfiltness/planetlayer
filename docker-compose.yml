@@ -5,7 +5,10 @@ services:
     image: imresamu/postgis:17-3.5@sha256:35fe7dceda62bfe7d2965b0ba78d915ff9f901b5e0466d633ecc58421b5b5210
     environment:
       POSTGRES_USER: spatial
-      POSTGRES_PASSWORD: spatial
+      # Each installation has its own password, kept in .env (made by
+      # `npm start`; see scripts/ensure-env.mjs). There's no default, so a
+      # copy of this file can never start with a known password.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Run `npm start` once to create .env, or set DB_PASSWORD}
       POSTGRES_DB: spatial
     volumes:
       - data:/var/lib/postgresql/data
@@ -17,7 +20,7 @@ services:
   app:
     build: .
     environment:
-      DATABASE_URL: postgres://spatial:spatial@db:5432/spatial
+      DATABASE_URL: postgres://spatial:${DB_PASSWORD:?Run `npm start` once to create .env, or set DB_PASSWORD}@db:5432/spatial
       LISTEN_ADDRESS: 0.0.0.0 # inside the container; `ports` decides who can reach it
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-}
     ports:

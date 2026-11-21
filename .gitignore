@@ -1,2 +1,4 @@
 node_modules
 dist
+# The database password; see scripts/ensure-env.mjs.
+.env

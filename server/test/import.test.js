@@ -77,5 +77,21 @@ describe('import', () => {
     assert.equal(await layerCount(), before);
   });
 
+  // GDAL's tools read an argument starting with "-" as an option, so a name
+  // taken from inside the file must never be passed as an argument on its own.
+  test('a layer named like a command-line option is read as a name', async () => {
+    const named = { ...collection([point(1, 2), { kind: 'well' }]), name: '--version' };
+    const layers = await importInto(await upload('options.geojson', named));
+    assert.deepEqual(layers.map((l) => l.shape), ['point']);
+    assert.equal(await count(layers[0]), 1);
+  });
+
+  test('a file in another coordinate system is reprojected to longitude/latitude', async () => {
+    const utm = { ...collection([point(500000, 4649776)]), crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:EPSG::32631' } } };
+    const [layer] = await importInto(await upload('utm.geojson', utm));
+    const { rows: [{ x, y }] } = await db.pool.query('SELECT ST_X(geom) AS x, ST_Y(geom) AS y FROM features WHERE layer_id = $1', [layer.id]);
+    assert.ok(Math.abs(x - 3) < 1e-6 && Math.abs(y - 42) < 1e-4, `got ${x}, ${y}`);
+  });
+
   test('unsupported extensions are refused', () => rejects400(importInto({ originalname: 'notes.txt', path: '/dev/null' }), /Unsupported file type/));
 });

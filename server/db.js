@@ -2,9 +2,14 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
 
-export const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL ?? 'postgres://spatial:spatial@localhost:5432/spatial',
-});
+// There's deliberately no default: each installation has its own database
+// password (see scripts/ensure-env.mjs), so a built-in one would be wrong
+// everywhere, and a shared, published one would be unsafe.
+if (!process.env.DATABASE_URL) {
+  throw new Error('Set DATABASE_URL to the database to use, such as postgres://spatial:<password>@localhost:5432/spatial.');
+}
+
+export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 const MIGRATIONS = path.join(import.meta.dirname, 'migrations');
 
@@ -23,17 +28,35 @@ export async function migrate() {
   }
 }
 
+/**
+ * Runs `fn` with a client inside a transaction: committed if `fn` resolves,
+ * rolled back if it throws, and the error rethrown.
+ *
+ * If the rollback fails too, the connection is broken: it's thrown away
+ * rather than returned to the pool, and the original error (the one that
+ * explains what happened) is the one rethrown.
+ *
+ * @template T
+ * @param {(db: pg.PoolClient) => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
 export async function transaction(fn) {
   const client = await pool.connect();
+  let broken;
   try {
     await client.query('BEGIN');
     const result = await fn(client);
     await client.query('COMMIT');
     return result;
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      broken = rollbackError;
+    }
     throw error;
   } finally {
-    client.release();
+    // Passing an error makes the pool close this connection instead of reusing it.
+    client.release(broken);
   }
 }
