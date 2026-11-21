@@ -8,11 +8,16 @@ const SAVE_DELAY_MS = 300;
  * Saves a value per layer a moment after it stops changing: used for layer
  * styles and filters.
  *
+ * A layer's saves reach the server one at a time, in the order they were
+ * made: each waits for the one before it to finish. Otherwise a slow save
+ * could land after a newer one and put the older value back.
+ *
  * Saves still waiting are sent straight away when the map closes (e.g. going
  * back to the list) or the page is hidden (reload, closed tab), with
- * `keepalive` set so the request can outlive the page.
+ * `keepalive` set so the request can outlive the page. Those don't wait for
+ * an earlier save still under way, as the page may be gone before it ends.
  *
- * @param {(id: number, value: unknown, options: { keepalive: boolean }) => void} send
+ * @param {(id: number, value: unknown, options: { keepalive: boolean }) => Promise<unknown>} send
  *   sends one save and reports its own failures; keep it stable with useCallback
  * @returns {{ save: (id: number, value: unknown) => void, cancel: (id: number) => void }}
  *   `save` queues a layer's latest value; `cancel` drops a layer's queued
@@ -20,6 +25,7 @@ const SAVE_DELAY_MS = 300;
  */
 export function useDebouncedSaver(send) {
   const waiting = useRef(new Map()); // layer id → { value, timer }
+  const sending = useRef(new Map()); // layer id → the latest save's promise, settled when it's done
 
   const cancel = useCallback((id) => {
     clearTimeout(waiting.current.get(id)?.timer);
@@ -29,7 +35,17 @@ export function useDebouncedSaver(send) {
   const sendNow = useCallback((id, keepalive = false) => {
     const { value } = waiting.current.get(id);
     cancel(id);
-    send(id, value, { keepalive });
+    if (keepalive) {
+      send(id, value, { keepalive });
+      return;
+    }
+    // `send` reports its own failures, so a failed save doesn't hold up the next.
+    const previous = sending.current.get(id) ?? Promise.resolve();
+    const done = previous.then(() => send(id, value, { keepalive })).catch(() => {});
+    sending.current.set(id, done);
+    done.then(() => {
+      if (sending.current.get(id) === done) sending.current.delete(id);
+    });
   }, [cancel, send]);
 
   const save = useCallback((id, value) => {
