@@ -50,14 +50,14 @@ export default function ToolDialog({ tool, layers, onRun, onClose }) {
     if (f.fieldOf) {
       return (
         <select className={FIELD} value={value} onChange={(e) => set(f.key, e.target.value)}>
-          <option value="">Everything</option>
+          <option value="">{f.none ?? 'Everything'}</option>
           {properties(f, params).map((k) => <option key={k}>{k}</option>)}
         </select>
       );
     }
     if (f.options) {
       return (
-        <select className={FIELD} value={value} onChange={(e) => set(f.key, e.target.value)}>
+        <select className={FIELD} value={value} onChange={(e) => set(f.key, e.target.value)} disabled={Boolean(f.needs && !params[f.needs])}>
           {f.options.map((o) => <option key={o}>{o}</option>)}
         </select>
       );

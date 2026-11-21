@@ -5,8 +5,8 @@ import { collection, freshDatabase, point, square, upload } from './helpers.js';
 let db, map, importFile, runTool, run;
 const layer = {};
 
-// Three areas in a row and an L, points inside, on a border and outside, and
-// a line running through the first row.
+// Three areas in a row and an L, points inside, on a border and outside, two
+// small areas, and a line running through the first row.
 //
 //   C
 //   A B        p at (0.5,0.5), (1,0.5) on the A|B border, (1.5,0.5), (5,5)
@@ -23,7 +23,14 @@ before(async () => {
     [square(1, 0), { name: 'B', kind: 'x' }],
     [square(0, 1), { name: 'C', kind: 'y' }],
   ));
-  await add('points', collection([point(0.5, 0.5)], [point(1, 0.5)], [point(1.5, 0.5)], [point(5, 5)]));
+  await add('points', collection(
+    [point(0.5, 0.5), { pop: 10, label: 'a' }],
+    [point(1, 0.5), { pop: 20, label: 'b' }],
+    [point(1.5, 0.5), { pop: 5, label: 'c' }],
+    [point(5, 5), { pop: 1, label: 'd' }],
+  ));
+  // One small area inside A, and one straddling A and B with its centre in B.
+  await add('blobs', collection([square(0.2, 0.2, 0.4)], [square(0.8, 0.2, 0.6)]));
   await add('line', collection([{ type: 'LineString', coordinates: [[-0.5, 0.5], [2.5, 0.5]] }, { name: 'road' }]));
   await add('more', collection([square(10, 10), { name: 'D' }]));
 });
@@ -38,10 +45,36 @@ const features = async (l) =>
 const layerCount = async () => (await db.pool.query('SELECT count(*)::int AS n FROM layers')).rows[0].n;
 
 describe('tools', () => {
-  test('count: a point on a shared border counts for both areas', async () => {
-    const out = await run('count', { areas: layer.areas.id, points: layer.points.id });
-    assert.equal(out.shape, 'polygon');
-    assert.deepEqual((await features(out)).map((f) => [f.props.name, f.props.count]), [['A', 2], ['B', 2], ['C', 0]]);
+  describe('summarize', () => {
+    const summarize = async (params) =>
+      (await features(await run('summarize', { areas: layer.areas.id, ...params }))).map((f) => f.props);
+
+    test('counts the features in each area; a point on a shared border counts for both', async () => {
+      const out = await run('summarize', { areas: layer.areas.id, features: layer.points.id, field: '' });
+      assert.equal(out.shape, 'polygon');
+      assert.equal(out.name, 'areas points summary');
+      const props = (await features(out)).map((f) => f.props);
+      assert.deepEqual(props.map((p) => [p.name, p.count]), [['A', 2], ['B', 2], ['C', 0]]);
+      assert.deepEqual(Object.keys(props[0]).sort(), ['count', 'kind', 'name'], 'nothing added up');
+    });
+
+    test('a line or area counts once, in the area holding its centre', async () => {
+      const props = await summarize({ features: layer.blobs.id });
+      assert.deepEqual(props.map((p) => [p.name, p.count]), [['A', 1], ['B', 1], ['C', 0]]);
+    });
+
+    test('adds up a property as a sum, mean, minimum or maximum', async () => {
+      const stat = async (name) => (await summarize({ features: layer.points.id, field: 'pop', stat: name })).map((p) => p[`pop_${name}`]);
+      assert.deepEqual(await stat('sum'), [30, 25, 0], 'an empty area sums to 0');
+      assert.deepEqual(await stat('mean'), [15, 12.5, null], 'and has no mean');
+      assert.deepEqual(await stat('min'), [10, 5, null]);
+      assert.deepEqual(await stat('max'), [20, 20, null]);
+    });
+
+    test('values that are not numbers are skipped, but still counted', async () => {
+      const props = await summarize({ features: layer.points.id, field: 'label', stat: 'sum' });
+      assert.deepEqual(props.map((p) => [p.count, p.label_sum]), [[2, 0], [2, 0], [0, 0]]);
+    });
   });
 
   test('intersect: keeps the parts of the line inside each area, with both sets of properties', async () => {
@@ -97,7 +130,9 @@ describe('tools', () => {
     test('unknown tool', () => rejects('explode', {}, /Unknown tool/));
     test('missing layer', () => rejects('centroid', {}, /Pick a layer for "Layer"/));
     test('non-numeric layer id', () => rejects('centroid', { layer: 'abc' }, /Pick a layer/));
-    test('wrong shape', () => rejects('count', { areas: layer.points.id, points: layer.points.id }, /must be a polygon layer/));
+    test('wrong shape', () => rejects('summarize', { areas: layer.points.id, features: layer.points.id }, /must be a polygon layer/));
+    test('unknown statistic', () => rejects('summarize', { areas: layer.areas.id, features: layer.points.id, field: 'pop', stat: 'median' }, /how to add it up/));
+    test('Count points is now Summarize within', () => rejects('count', { areas: layer.areas.id, points: layer.points.id }, /Unknown tool/));
     test('combine across shapes', () => rejects('combine', { layer: layer.areas.id, other: layer.points.id }, /must be a polygon layer/));
     test('distance over 100 km', () => rejects('buffer', { layer: layer.points.id, distance: 200, unit: 'km' }, /at most 100 km/));
     test('unknown unit', () => rejects('buffer', { layer: layer.points.id, distance: 1, unit: 'parsec' }, /Unknown unit/));

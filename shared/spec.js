@@ -19,9 +19,14 @@ export const FORMATS = {
 
 export const UNITS = { km: 1000, m: 1, mi: 1609.344 };
 
+// What "Summarize within" can work out from a property's numbers in each area.
+export const STATS = ['sum', 'mean', 'min', 'max'];
+
 // Each field is a layer picker (limited to `shapes`, or to the shape of the
 // layer picked in `sameShapeAs`), a property of the layer picked in
-// `fieldOf`, or a plain setting.
+// `fieldOf`, or a plain setting. A property picker may be left blank; `none`
+// says what blank means (it's "Everything" when not given). A field with
+// `needs` only matters, and can only be set, once the field it names is.
 export const TOOLS = [
   { id: 'buffer', label: 'Buffer', hint: 'Draw an area around each feature', fields: [
     { key: 'layer', label: 'Layer', shapes: SHAPES },
@@ -41,9 +46,11 @@ export const TOOLS = [
     { key: 'layer', label: 'Layer', shapes: ['line', 'polygon'] },
     { key: 'field', label: 'Merge shapes that share', fieldOf: 'layer', initial: '' },
   ] },
-  { id: 'count', label: 'Count points', hint: 'Count the points inside each area', fields: [
+  { id: 'summarize', label: 'Summarize within', hint: 'Count the features in each area, and add up a property', fields: [
     { key: 'areas', label: 'Areas', shapes: ['polygon'] },
-    { key: 'points', label: 'Points', shapes: ['point'] },
+    { key: 'features', label: 'Features', shapes: SHAPES },
+    { key: 'field', label: 'Add up', fieldOf: 'features', initial: '', none: 'Nothing, just count' },
+    { key: 'stat', label: 'As', options: STATS, initial: 'sum', needs: 'field' },
   ] },
   { id: 'centroid', label: 'Centroid', hint: 'Turn each shape into a point at its centre', fields: [
     { key: 'layer', label: 'Layer', shapes: ['line', 'polygon'] },

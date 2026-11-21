@@ -40,7 +40,7 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 | Intersect | The part of a layer inside an area layer |
 | Subtract | The part of a layer outside an area layer |
 | Dissolve | Merge lines or areas sharing a property value |
-| Count points | Number of points inside each area (a point on a shared border counts for both) |
+| Summarize within | For each area, how many features of another layer are in it (`count`) and, optionally, the sum, mean, minimum or maximum of one of their numeric properties (such as `pop_est_sum`). A point on a shared border counts for both areas; a line or area counts once, in the area holding its centre. Only values stored as numbers are added up |
 | Centroid | A point at the centre of each shape |
 | Combine | Two layers of the same shape as one |
 
@@ -68,6 +68,7 @@ server/gdal.js          reading uploaded files with GDAL's command-line tools
 server/layerFilter.js   saving a layer's filter, and saving its matching features as a new layer
 server/filter/          filters: checking them, turning them into SQL, summarising a layer's properties
 server/tools.js         the analysis tools, in PostGIS
+server/summarize.js     the Summarize within tool's SQL
 server/migrations/      schema, applied in order when the server starts
 server/test/            integration tests against PostGIS and GDAL
 

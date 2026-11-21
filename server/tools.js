@@ -2,6 +2,7 @@ import { SHAPES, TOOLS, UNITS } from '../shared/spec.js';
 import { transaction } from './db.js';
 import { badRequest } from './errors.js';
 import { createLayer } from './layers.js';
+import { summarizeSql } from './summarize.js';
 import { parseId, parseLayerName } from './validation.js';
 
 // Stored geometries are made valid on import, so the tools use them as they
@@ -84,21 +85,7 @@ const SQL = {
     };
   },
 
-  // A point on the border between two areas counts for both.
-  count({ areas: a, points: b }) {
-    return {
-      name: `${a.name} ${b.name} count`,
-      shape: 'polygon',
-      args: [a.id, b.id],
-      sql: `SELECT a.geom, a.props || jsonb_build_object('count', c.n) AS props
-            FROM features a
-            CROSS JOIN LATERAL (
-              SELECT count(*) AS n FROM features b
-              WHERE b.layer_id = $2 AND ST_Intersects(a.geom, b.geom)
-            ) c
-            WHERE a.layer_id = $1`,
-    };
-  },
+  summarize: summarizeSql,
 
   centroid({ layer: a }) {
     return {
