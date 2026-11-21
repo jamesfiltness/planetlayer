@@ -1,8 +1,8 @@
 import { pool } from './db.js';
-import { notFound } from './errors.js';
+import { badRequest, notFound } from './errors.js';
 import { filterSql } from './filter/sql.js';
 import { parseSymbology } from './symbology.js';
-import { fitLayerName, parseId, parseStyle } from './validation.js';
+import { fitLayerName, parseId, parseLayerName, parseStyle } from './validation.js';
 
 // New layers take a colour from this list by their id, so a layer's colour is
 // stable and layers created one after another differ.
@@ -53,6 +53,17 @@ export async function createLayer(db, mapId, name, shape) {
  * (`extent`; null with no features). The extent ignores the filter.
  */
 export async function listLayers(mapId) {
+  return layerRows('l.map_id = $1', [mapId]);
+}
+
+/** One layer, described as in listLayers. Throws a 404 if it doesn't exist. */
+export async function getLayer(id) {
+  const [layer] = await layerRows('l.id = $1', [parseId(id)]);
+  if (!layer) throw notFound('That layer no longer exists.');
+  return layer;
+}
+
+async function layerRows(where, args) {
   const { rows } = await pool.query(
     `SELECT l.id, l.map_id, l.name, l.shape, ${STYLE}, l.filter,
             (SELECT count(*)::int FROM features WHERE layer_id = l.id) AS count,
@@ -60,8 +71,8 @@ export async function listLayers(mapId) {
              FROM (SELECT ST_Extent(geom) AS e FROM features WHERE layer_id = l.id) x) AS extent,
             (SELECT coalesce(array_agg(DISTINCT k), '{}') FROM (SELECT props FROM features WHERE layer_id = l.id LIMIT 100) s,
                     jsonb_object_keys(s.props) k) AS fields
-     FROM layers l WHERE l.map_id = $1 ORDER BY l.id`,
-    [mapId],
+     FROM layers l WHERE ${where} ORDER BY l.id`,
+    args,
   );
   await Promise.all(rows.map(async (layer) => {
     layer.matching = layer.filter ? await countMatching(pool, layer.id, layer.filter) : layer.count;
@@ -95,6 +106,16 @@ export async function saveLayerStyle(id, value) {
   );
   if (!saved) throw notFound('That layer no longer exists.');
   await touchMap(pool, saved.map_id);
+}
+
+/** Renames a layer. Unlike a new layer's name, this one is required. */
+export async function renameLayer(id, value) {
+  const name = parseLayerName(value);
+  if (!name) throw badRequest('Give the layer a name.');
+  const { rows: [renamed] } = await pool.query('UPDATE layers SET name = $2 WHERE id = $1 RETURNING map_id', [parseId(id), name]);
+  if (!renamed) throw notFound('That layer no longer exists.');
+  await touchMap(pool, renamed.map_id);
+  return getLayer(id);
 }
 
 export async function deleteLayer(id) {

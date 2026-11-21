@@ -10,13 +10,13 @@ const CHUNK = 5000; // features staged per INSERT
 
 // Imports every spatial layer in an uploaded file into a map, all or nothing.
 // A source layer holding more than one kind of geometry becomes one map layer
-// per kind.
-export async function importFile(file, mapId) {
+// per kind. Layers are named after the file, or `name` when given.
+export async function importFile(file, mapId, { name: given } = {}) {
   const ext = path.extname(file.originalname).toLowerCase();
   if (!Object.hasOwn(FORMATS, ext)) throw badRequest(`Unsupported file type: ${ext || 'none'}`);
   const drivers = FORMATS[ext];
 
-  const base = path.basename(file.originalname, ext);
+  const base = given ?? path.basename(file.originalname, ext);
   const sources = ext === '.zip' || ext === '.kmz'
     ? await archiveSources(file.path, ext === '.zip' ? '.shp' : '.kml')
     : [file.path];

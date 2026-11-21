@@ -46,6 +46,34 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 
 Click a feature to see its properties.
 
+## Use it from Claude (MCP)
+
+The app is also an [MCP](https://modelcontextprotocol.io) server, so an AI assistant such as Claude Code can create maps, load files, run the analysis tools and explain the results. Start the app with `npm start`, then connect Claude Code to it:
+
+```sh
+claude mcp add --transport http spatial-analysis http://localhost:8080/mcp
+```
+
+Then ask in plain words, from the folder your data is in: *"Make a map called Uganda water from the three GeoJSON files here, then find the broken water pumps that would help the most people."* Layers Claude makes show up in the app when you reload the map.
+
+- **The app must be running.** The server is part of the app, at `/mcp` on the app's own address and port. While the app is down, Claude can't use its tools.
+- **Files go straight to the app.** The app runs in Docker and can't see your folders, so Claude asks the `upload_file` tool for a `curl` command and runs it on your computer. The file goes from your disk to the app's import, as if you'd dropped it on the map, and never passes through the model. This needs an assistant that can run commands on your computer: Claude Code in the terminal or the desktop app, in a session running on your machine. Claude Code on the web, or a cloud session, can't reach `localhost`. Assistants that can't run commands can still send small data inline with `add_features`.
+- **Claude sees summaries, not your whole dataset.** The tools work on layers inside the app and return ids, counts and property summaries. Claude reads features only when it asks to, a page of up to 100 at a time, without coordinates unless needed. Results over 40,000 characters are refused with a hint to ask for less.
+- **Guidance comes with it.** The server tells Claude how analysis is done here (look at a property's real values first, name new layers, state assumptions), and offers step-by-step playbooks, such as ranking facilities by the people they serve, which Claude reads when a question calls for one. They're in `server/assistant/playbooks/`.
+
+| Tools | |
+| --- | --- |
+| Maps | `list_maps`, `get_map` (with its layers), `create_map`, `rename_map` |
+| Layers | `rename_layer`, `delete_layer` |
+| Reading data | `describe_layer` (every property's type, range and common values), `get_features` (a sorted page of features) |
+| Data in | `upload_file` (a command that uploads a file), `add_features` (inline GeoJSON) |
+| Filters | `set_layer_filter`, `save_filtered_layer` |
+| Style | `style_layer` (style type and colours; categories and ranges are worked out from the data) |
+| Analysis | `buffer`, `intersect`, `subtract`, `dissolve`, `summarize`, `centroid`, `combine`, made from `shared/spec.js` |
+| Guidance | `read_playbook` |
+
+`/mcp` follows the same host and cross-site rules as the rest of the app, so other websites can't use it.
+
 ## Layout
 
 ```
@@ -54,13 +82,14 @@ shared/filter.js        layer filters: their operators and what makes a conditio
 shared/limits.js        limits on map and layer names and on layer styles
 shared/symbology.js     layer symbology: the style types, which layer shapes and properties each can use, and their settings
 shared/colors.js        the category palette and colour ramps symbology draws with
+shared/buildSymbology.js  a style type's settings worked out from a property's values (the Style tab and style_layer)
 
 server/index.js         startup: migrate the database, then listen
 server/app.js           the Express app: middleware order, routers, client files, errors
 server/http/            request guard (host names, cross-site writes), security headers, upload settings, errors
 server/routes/          thin route handlers for /api/maps and /api/layers
 server/maps.js          maps: list, create, rename, delete, save the view
-server/layers.js        layers: create, list, restyle, delete, GeoJSON
+server/layers.js        layers: create, list, rename, restyle, delete, GeoJSON
 server/symbology.js     checking a layer's symbology against its shape
 server/import.js        importing a file into a map, all or nothing
 server/importNumbers.js storing numbers written as text as numbers, on import
@@ -70,6 +99,9 @@ server/filter/          filters: checking them, turning them into SQL, summarisi
 server/tools.js         running an analysis tool on the features each picked layer's filter lets through
 server/toolSql.js       each analysis tool's SQL, in PostGIS
 server/summarize.js     the Summarize within tool's SQL
+server/features.js      reading a layer's features a page at a time
+server/assistant/       the tools AI assistants use: registry.js lists them, tools/ holds them by area, playbooks/ the guides
+server/mcp/             the MCP server built from those tools, and its /mcp route
 server/migrations/      schema, applied in order when the server starts
 server/test/            integration tests against PostGIS and GDAL
 
