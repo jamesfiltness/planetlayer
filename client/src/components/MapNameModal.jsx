@@ -1,9 +1,8 @@
 import { useState } from 'react';
+import { MAX_MAP_NAME } from '../../../shared/limits.js';
 import Button from './Button.jsx';
+import { FIELD } from './fieldClass.js';
 import Modal, { ModalError } from './Modal.jsx';
-
-// Matches MAX_MAP_NAME in server/validation.js.
-const MAX_LENGTH = 200;
 
 export default function MapNameModal({ title, submitLabel, initialName = '', onSubmit, onClose }) {
   const [name, setName] = useState(initialName);
@@ -40,9 +39,9 @@ export default function MapNameModal({ title, submitLabel, initialName = '', onS
         <input
           autoFocus
           value={name}
-          maxLength={MAX_LENGTH}
+          maxLength={MAX_MAP_NAME}
           onChange={(e) => setName(e.target.value)}
-          className="rounded-md border border-edge px-2 py-1.5"
+          className={FIELD}
         />
       </label>
       <ModalError>{error}</ModalError>

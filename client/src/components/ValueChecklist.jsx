@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { FIELD } from './fieldClass.js';
 
-const FIELD = 'rounded-md border border-edge px-2 py-1.5';
 
 /**
  * The value picker for "is one of": a box to search the property's common
