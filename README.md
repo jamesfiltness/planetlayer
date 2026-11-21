@@ -28,7 +28,7 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 
 ## What it does
 
-- **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers. Each map opens where you last left it, on any device.
+- **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers. Each map opens where you last left it, on any device, and shows changes made elsewhere (another tab, another device or an assistant) as they happen.
 - **Add layer:** click the **+** at the top of the Layers panel to upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers. A property whose values are all numbers written as text (such as `"pop_est": "23.5"`) is stored as numbers, so it can be filtered, styled and added up as numbers; empty text in it becomes empty. Text with a leading zero (`"007"`), a whole number of more than 15 digits, or any word, keeps the whole property as text, since it's probably a code or an ID. Layers imported before this was added keep their text: import the file again to convert them.
 - **Layers:** the panel on the left lists the map's layers, each with a small picture: its shape (points, line or area) in the layer's colour, or a glimpse of its style (category colours, colour ramp or heatmap); hover over it for the style and property. Click the eye to hide or show a layer on the map. Hover over a layer and click the pencil to open it in the layer editor on the right, where the **Style** tab sets how the layer is drawn: a style type at the top, then its fill colour and opacity, outline colour and width, and overall opacity (changes show on the map as you make them, and are saved). The style types are **Single colour** (every feature alike), **Categories** (a colour for each of a property's 24 most common values, in a fixed palette, with grey for any other value and for none) and **Colour scale** (a smooth gradient along a choice of colour ramps, from a numeric property's lowest value to its highest) and, for points only, **Size** (circles sized by a numeric property, with their area in step with the value), **Heatmap** (points blurred into a heatmap, optionally weighted by a numeric property; zoomed out, its intensity is lowered to match how crowded the points get, so it doesn't turn solid red) and **Cluster** (nearby points grouped into one circle with their count; click a cluster to zoom in and split it). After choosing a type, pick the property it colours by; only properties that suit the type are offered. The editor's **⋯** menu deletes the layer.
 - **Filter:** the layer editor's **Filter** tab shows only the features whose properties match conditions, such as `functional` *is one of* `not working`, or `install_year` *is at least* 2015. Each comparison suits the property's type (numbers, text or true/false), common values are suggested from the data, and several conditions can be matched all together or any one of them. Text comparisons ignore case. The filter is saved with the layer, and a funnel in the Layers panel marks a filtered layer with how many features it shows. **Save as new layer** copies the matching features into a layer of their own. The analysis tools use only the features a layer's filter lets through, so they work on what the map shows; a filtered layer is marked "(filtered)" in the tool's layer list and in the name of the layer it makes.
@@ -54,7 +54,7 @@ The app is also an [MCP](https://modelcontextprotocol.io) server, so an AI assis
 claude mcp add --transport http spatial-analysis http://localhost:8080/mcp
 ```
 
-Then ask in plain words, from the folder your data is in: *"Make a map called Uganda water from the three GeoJSON files here, then find the broken water pumps that would help the most people."* Layers Claude makes show up in the app when you reload the map.
+Then ask in plain words, from the folder your data is in: *"Make a map called Uganda water from the three GeoJSON files here, then find the broken water pumps that would help the most people."* Layers Claude makes appear on the map in your browser as it works.
 
 - **The app must be running.** The server is part of the app, at `/mcp` on the app's own address and port. While the app is down, Claude can't use its tools.
 - **Files go straight to the app.** The app runs in Docker and can't see your folders, so Claude asks the `upload_file` tool for a `curl` command and runs it on your computer. The file goes from your disk to the app's import, as if you'd dropped it on the map, and never passes through the model. This needs an assistant that can run commands on your computer: Claude Code in the terminal or the desktop app, in a session running on your machine. Claude Code on the web, or a cloud session, can't reach `localhost`. Assistants that can't run commands can still send small data inline with `add_features`.
@@ -90,6 +90,7 @@ server/http/            request guard (host names, cross-site writes), security 
 server/routes/          thin route handlers for /api/maps and /api/layers
 server/maps.js          maps: list, create, rename, delete, save the view
 server/layers.js        layers: create, list, rename, restyle, delete, GeoJSON
+server/mapEvents.js     telling open browsers a map has changed, so they show changes made elsewhere
 server/symbology.js     checking a layer's symbology against its shape
 server/import.js        importing a file into a map, all or nothing
 server/importNumbers.js storing numbers written as text as numbers, on import
@@ -110,7 +111,7 @@ client/src/pages/       one component per route
 client/src/components/  UI pieces: toolbar, layers panel, layer editor and its Style and Filter tabs, tool form, modals, ⋯ menu, list row
 client/src/map/         MapLibre: base style, keeping the map in step with the layers, feature popups, saving the view
 client/src/map/renderers/  how each symbology type is drawn, as MapLibre style layers
-client/src/hooks/       state for a map's layers, saving their styles and filters, property summaries, and the status banner
+client/src/hooks/       state for a map's layers, saving their styles and filters, hearing of changes made elsewhere, property summaries, and the status banner
 client/src/api.js       calls to the server API
 ```
 
@@ -130,6 +131,7 @@ Names, of maps and of new layers, can be at most 200 characters (`shared/limits.
 | PATCH | `/api/maps/:id` | Rename a map: `{ "name": "…" }` |
 | PUT | `/api/maps/:id/view` | Save where the map was left: `{ "center": [lng, lat], "zoom": …, "bearing": …, "pitch": … }` (bearing and pitch optional) |
 | DELETE | `/api/maps/:id` | Delete a map and its layers |
+| GET | `/api/maps/:id/events` | A stream of Server-Sent Events: a `changed` event whenever the map or its layers change, from anywhere. Open maps listen to it to show changes made in another tab or by an assistant |
 | GET | `/api/maps/:id/layers` | The map's layers, each with its `style`, `filter` (or null), feature `count`, how many match the filter (`matching`), property names (`fields`) and the box around its features as `[west, south, east, north]` (`extent`, or null) |
 | POST | `/api/maps/:id/import` | Import a file (multipart field `file`) into the map |
 | POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`, plus an optional `name` for the new layer) |

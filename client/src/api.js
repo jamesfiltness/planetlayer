@@ -18,6 +18,9 @@ const send = (method, path, body, options) =>
 export const geojsonUrl = (layerId, revision = 0) =>
   `${location.origin}/api/layers/${layerId}/geojson${revision ? `?v=${revision}` : ''}`;
 
+// The stream of a map's changes, for an EventSource (see useMapChanges).
+export const mapEventsUrl = (mapId) => `/api/maps/${mapId}/events`;
+
 export const api = {
   maps: () => request('/maps'),
   map: (id) => request(`/maps/${id}`),

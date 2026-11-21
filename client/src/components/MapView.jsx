@@ -10,10 +10,10 @@ import LayerEditor from './LayerEditor.jsx';
 import StatusBanner from './StatusBanner.jsx';
 import Toolbar from './Toolbar.jsx';
 
-export default function MapView({ mapId, initialView }) {
+export default function MapView({ mapId, initialView, changes }) {
   const status = useStatus();
   const [container, map] = useMapLibre(initialView);
-  const { layers, importFiles, setLayerStyle, setLayerFilter, saveFilteredAsLayer, deleteLayer, runTool } = useMapLayers(mapId, status);
+  const { layers, importFiles, setLayerStyle, setLayerFilter, saveFilteredAsLayer, deleteLayer, runTool } = useMapLayers(mapId, status, changes);
   const [hidden, setHidden] = useState(() => new Set());
 
   // Kept as an id, so the editor always shows the layer's latest settings and

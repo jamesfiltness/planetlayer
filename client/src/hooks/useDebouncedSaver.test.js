@@ -29,6 +29,19 @@ describe('useDebouncedSaver', () => {
     expect(calls.map((c) => c.value)).toEqual(['b']);
   });
 
+  test('a save is pending from when it is queued until it has finished', async () => {
+    const { send, calls } = controlledSend();
+    const { result } = renderHook(() => useDebouncedSaver(send));
+    act(() => result.current.save(1, 'a'));
+    expect([result.current.pending(1), result.current.pending(2)]).toEqual([true, false]);
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(result.current.pending(1)).toBe(true);
+    calls[0].finish();
+    await settle();
+    await settle();
+    expect(result.current.pending(1)).toBe(false);
+  });
+
   test("a layer's next save waits until the one before has finished", async () => {
     const { send, calls } = controlledSend();
     const { result } = renderHook(() => useDebouncedSaver(send));

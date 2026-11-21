@@ -1,6 +1,7 @@
-import { pool } from './db.js';
+import { afterCommit, pool } from './db.js';
 import { badRequest, notFound } from './errors.js';
 import { filterSql } from './filter/sql.js';
+import { announceMapChanged } from './mapEvents.js';
 import { parseSymbology } from './symbology.js';
 import { fitLayerName, parseId, parseLayerName, parseStyle } from './validation.js';
 
@@ -142,8 +143,11 @@ export async function layerGeoJson(id) {
   return fc;
 }
 
-// Marks the map as just edited. Throws if it no longer exists.
+// Marks the map as just edited, and tells browsers showing it once the edit
+// is saved (see mapEvents.js). Every change to a map's layers calls this.
+// Throws if the map no longer exists.
 export async function touchMap(db, mapId) {
   const { rowCount } = await db.query('UPDATE maps SET updated_at = now() WHERE id = $1', [mapId]);
   if (!rowCount) throw notFound('That map no longer exists.');
+  afterCommit(db, () => announceMapChanged(mapId));
 }
