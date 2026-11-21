@@ -125,6 +125,8 @@ docker compose exec app npm test
 
 (Locally, `cd server && npm test` needs `DATABASE_URL`, like the server.) `server/test/fixtures/make-fixtures.sh` rebuilds the archive fixtures.
 
+The client's tests run without Docker: `cd client && npm test`. To check the code for mistakes, run `npm install` once in the top folder, then `npm run lint`. GitHub runs all three on every pull request (`.github/workflows/ci.yml`).
+
 ## Base map
 
 The base map comes from [OpenFreeMap](https://openfreemap.org/): OpenStreetMap data as vector tiles, free to use with no API key or sign-up.
