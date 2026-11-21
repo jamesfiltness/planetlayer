@@ -5,7 +5,7 @@ import { ChevronIcon } from './icons.jsx';
 import ToolDialog, { canRun } from './ToolDialog.jsx';
 
 const PANEL = 'rounded-xl bg-white shadow-panel';
-const MENU = `${PANEL} flex max-h-[calc(100vh-120px)] min-w-[260px] flex-col overflow-auto p-1.5`;
+const MENU = `${PANEL} flex max-h-[calc(100vh_-_var(--spacing-map-top)_-_104px)] min-w-[260px] flex-col overflow-auto p-1.5`;
 
 export default function Toolbar({ layers, onRun }) {
   const [menuOpen, setMenuOpen] = useState(false);

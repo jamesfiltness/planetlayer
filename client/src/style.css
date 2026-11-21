@@ -9,7 +9,14 @@
   --color-accent: #4363d8;
   --color-hover: #eef;
   --color-ink: #222;
+  /* The wordmark's navy, and the face the header is set in (loaded in index.html). */
+  --color-brand: #16233a;
+  --font-brand: 'Manrope', 'Helvetica Neue', ui-sans-serif, system-ui, sans-serif;
   --shadow-panel: 0 4px 16px rgb(0 0 0 / 0.2);
+  /* The app header's height (h-header), and where a panel floating on the map
+     starts so that it clears the header (top-map-top). */
+  --spacing-header: 56px;
+  --spacing-map-top: calc(var(--spacing-header) + 16px);
 }
 
 @layer base {
@@ -19,6 +26,19 @@
   body {
     font: 14px/1.4 system-ui, sans-serif;
     color: var(--color-ink);
+  }
+}
+
+/* What the chrome floating over a map is made of: the app header and the side
+   panels. Translucent over a blur, so the map shows through and text on it
+   still has something to sit on. One class rather than a colour repeated in
+   each component, so they can't drift apart: a header at a different opacity
+   to the panel below it reads as a bar bolted on. Use it instead of a
+   background utility, which would win over it. */
+@layer components {
+  .chrome-float {
+    background: rgb(255 255 255 / 0.72);
+    backdrop-filter: blur(12px);
   }
 }
 

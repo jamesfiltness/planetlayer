@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router';
+import { useOutletContext, useParams } from 'react-router';
 import { api, NotFoundError } from '../api.js';
 import MapView from '../components/MapView.jsx';
 import NotFound from './NotFound.jsx';
 
 export default function MapPage() {
   const { mapId } = useParams();
+  const { setMapName } = useOutletContext();
   // undefined while loading; then the map, or { failed: true } if it couldn't be read.
   const [map, setMap] = useState();
   const [missing, setMissing] = useState(false);
@@ -31,9 +32,15 @@ export default function MapPage() {
     document.title = map?.name ? `${map.name} · Spatial Analysis` : 'Spatial Analysis';
   }, [map?.name]);
 
+  // The header shows the open map's name, and drops it on the way out.
+  useEffect(() => {
+    setMapName(map?.name ?? null);
+    return () => setMapName(null);
+  }, [map?.name, setMapName]);
+
   if (missing) return <NotFound message="That map doesn't exist. It may have been deleted." />;
   // Wait for the map, so MapLibre starts at its saved view instead of jumping there.
   if (!map) return <div className="h-full bg-gray-100" />;
   // Keyed on the id, so opening another map starts from a fresh map and layer list.
-  return <MapView key={mapId} mapId={mapId} name={map.name} initialView={map.view} />;
+  return <MapView key={mapId} mapId={mapId} initialView={map.view} />;
 }
