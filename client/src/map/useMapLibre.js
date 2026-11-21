@@ -31,7 +31,9 @@ export function useMapLibre(initialView) {
     m.on('load', () => setMap(m));
     return () => m.remove();
     // Only the first view and theme matter: the map moves itself after that,
-    // and the theme can't change while it's open.
+    // and the theme can't change while it's open. Listing them would make a
+    // new map (and lose the layers drawn on it) whenever either changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [container, map];

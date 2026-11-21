@@ -48,6 +48,7 @@ export function useSaveView(map, mapId, initialView) {
       window.removeEventListener('pagehide', flush);
     };
     // initialView is fixed for the life of the map, like in useMapLibre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, mapId]);
 }
 

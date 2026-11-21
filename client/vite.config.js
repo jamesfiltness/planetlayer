@@ -16,4 +16,6 @@ export default defineConfig({
     fs: { allow: [import.meta.dirname, path.join(import.meta.dirname, '../shared')] },
   },
   build: { chunkSizeWarningLimit: 1500 }, // maplibre-gl alone is ~1 MB
+  // `npm test`: Vitest, with a browser-like page for components and hooks.
+  test: { environment: 'jsdom' },
 });

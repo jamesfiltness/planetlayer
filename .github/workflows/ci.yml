@@ -1,0 +1,51 @@
+# Checks every push and pull request: lint, the client's tests and build, and
+# the server's tests against real PostGIS and GDAL, run in the same Docker
+# images the app uses.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # A throwaway password, as `npm start` would make (scripts/ensure-env.mjs).
+      - run: echo "DB_PASSWORD=$(openssl rand -hex 32)" > .env
+      - run: docker compose up --build --detach --wait
+      - run: docker compose exec -T app npm test
+      - if: failure()
+        run: docker compose logs

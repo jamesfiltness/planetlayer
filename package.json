@@ -1,9 +1,18 @@
 {
   "name": "spatial-analysis",
   "private": true,
+  "type": "module",
   "description": "Shortcuts for running the whole app; the code lives in client/ and server/.",
   "scripts": {
     "start": "node scripts/ensure-docker.mjs && node scripts/ensure-env.mjs && docker compose up --build",
-    "docker": "node scripts/ensure-docker.mjs"
+    "docker": "node scripts/ensure-docker.mjs",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0"
   }
 }

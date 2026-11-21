@@ -33,9 +33,11 @@ export default function SettingsProvider({ children }) {
     );
   }, []);
 
+  // Only when the theme itself changes, not every time the settings object does.
+  const theme = settings?.theme;
   useEffect(() => {
-    if (settings) applyTheme(settings.theme);
-  }, [settings?.theme]);
+    if (theme) applyTheme(theme);
+  }, [theme]);
 
   const update = useCallback(async (changes) => {
     const before = saved.current;
