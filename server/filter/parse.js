@@ -1,4 +1,4 @@
-import { conditionProblem, filterOp, FILTER_MATCHES, MAX_FILTER_CONDITIONS } from '../../shared/filter.js';
+import { conditionProblem, FILTER_MATCHES, FILTER_TOO_BIG, filterOp, filterTooBig, MAX_FILTER_CONDITIONS } from '../../shared/filter.js';
 import { badRequest } from '../errors.js';
 
 /**
@@ -8,7 +8,8 @@ import { badRequest } from '../errors.js';
  * `match` defaults to `all`. A filter with no conditions is no filter, so it
  * becomes null. A condition with no value (such as "is empty") gets a null
  * one, and a range is put in order, smallest first. Anything malformed is
- * rejected with a message naming the condition at fault.
+ * rejected with a message naming the condition at fault, and so is a filter
+ * too big to save (see MAX_FILTER_BYTES).
  */
 export function parseFilter(value) {
   if (value === null) return null;
@@ -24,7 +25,10 @@ export function parseFilter(value) {
     if (problem) throw badRequest(`Condition ${i + 1}: ${problem}`);
     return normalize(condition);
   });
-  return parsed.length ? { match, conditions: parsed } : null;
+  if (!parsed.length) return null;
+  const filter = { match, conditions: parsed };
+  if (filterTooBig(filter)) throw badRequest(FILTER_TOO_BIG);
+  return filter;
 }
 
 // Only the known keys are kept, so nothing else is stored.

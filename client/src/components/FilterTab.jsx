@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { conditionProblem, FILTER_MATCHES, MAX_FILTER_CONDITIONS } from '../../../shared/filter.js';
+import { conditionProblem, FILTER_MATCHES, FILTER_TOO_BIG, filterTooBig, MAX_FILTER_CONDITIONS } from '../../../shared/filter.js';
 import { useFieldSummaries } from '../hooks/useFieldSummaries.js';
 import Button from './Button.jsx';
 import ConditionRow from './ConditionRow.jsx';
@@ -25,7 +25,9 @@ function toFilter(match, rows) {
  * each comparison means.
  *
  * Its rows are a draft, kept here so unfinished ones survive. Whenever the
- * finished ones add up to a different filter, it's passed to `onChange`.
+ * finished ones add up to a different filter, it's passed to `onChange`,
+ * unless it's too big to save (see MAX_FILTER_BYTES): then it's held back,
+ * and the tab says so, until it's cut down.
  * An unfinished row stays quiet while it's being filled in: it only says
  * what's missing once saving as a new layer has been tried with it there.
  * Key it on the layer's id, so another layer starts from its own filter.
@@ -44,11 +46,13 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
   // Keys of the rows that were unfinished when a save was last tried.
   const [flagged, setFlagged] = useState(() => new Set());
   const filter = toFilter(match, rows);
+  const tooBig = filter !== null && filterTooBig(filter);
 
   const apply = (nextMatch, nextRows) => {
     setMatch(nextMatch);
     setRows(nextRows);
     const next = toFilter(nextMatch, nextRows);
+    if (next && filterTooBig(next)) return;
     if (JSON.stringify(next) === sent.current) return;
     sent.current = JSON.stringify(next);
     onChange(next);
@@ -57,6 +61,7 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
   // Saves the matching features as a new layer, unless a row is unfinished:
   // then those rows are flagged to show what's missing, and nothing is saved.
   const save = async (name) => {
+    if (tooBig) return false;
     const unfinished = rows.filter(conditionProblem);
     if (!unfinished.length) return onSaveAsLayer(filter, name);
     setFlagged(new Set(unfinished.map((row) => row.key)));
@@ -113,6 +118,8 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
         </Button>
         {rows.length > 0 && <Button onClick={() => apply(match, [])}>Clear</Button>}
       </div>
+
+      {tooBig && <p role="alert" className="text-warning-text">{FILTER_TOO_BIG}</p>}
 
       {layer.filter && (
         <p aria-live="polite" className="text-ink-faint">

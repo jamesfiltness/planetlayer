@@ -135,6 +135,8 @@ describe('saving a filter', () => {
       { conditions: where('pop', 'between', [1]) }, { conditions: where('kind', 'contains', 5) },
       { conditions: where('kind', 'in', []) }, { conditions: where('kind', 'in', ['a', 1]) },
       { conditions: Array(21).fill(where('kind', 'empty')[0]) },
+      // Within every per-condition limit, but too big to save as a whole.
+      { conditions: Array(20).fill(where('kind', 'in', Array.from({ length: 200 }, (_, i) => `${i}`.padEnd(100, 'x')))[0]) },
     ];
     for (const value of bad) {
       await assert.rejects(saveLayerFilter(places.id, value), status(400), `accepted ${JSON.stringify(value)}`);
