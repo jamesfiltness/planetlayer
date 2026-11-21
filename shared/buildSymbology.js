@@ -1,7 +1,8 @@
-import { CATEGORY_PALETTE, DEFAULT_RAMP } from '../../../shared/colors.js';
+// Used by both the client (the Style tab) and the server (the MCP server's style_layer tool).
+import { CATEGORY_PALETTE, DEFAULT_RAMP } from './colors.js';
 import {
   categoryKey, DEFAULT_CLUSTER_RADIUS, DEFAULT_HEATMAP, DEFAULT_SIZES, MAX_CATEGORIES, MAX_CATEGORY_TEXT, symbologyType,
-} from '../../../shared/symbology.js';
+} from './symbology.js';
 
 /**
  * The symbology of `type` for the layer's property `field`, as the Style tab

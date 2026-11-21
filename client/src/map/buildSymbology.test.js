@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { CATEGORY_PALETTE, DEFAULT_RAMP } from '../../../shared/colors.js';
 import { DEFAULT_CLUSTER_RADIUS, DEFAULT_HEATMAP, DEFAULT_SIZES } from '../../../shared/symbology.js';
-import { buildSymbology, startingField } from './buildSymbology.js';
+import { buildSymbology, startingField } from '../../../shared/buildSymbology.js';
 
 const summary = (name, type, values, extra = {}) =>
   ({ name, type, min: null, max: null, distinct: values.length, values: values.map((value) => ({ value, count: 1 })), ...extra });
