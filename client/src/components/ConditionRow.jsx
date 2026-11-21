@@ -2,7 +2,7 @@ import { conditionProblem, filterOp, opsForType } from '../../../shared/filter.j
 import FilterValueInput from './FilterValueInput.jsx';
 import { CloseIcon } from './icons.jsx';
 
-const FIELD = 'rounded-md border border-gray-300 px-2 py-1.5';
+const FIELD = 'rounded-md border border-edge px-2 py-1.5';
 
 // The value a condition starts with for each shape of value (see FILTER_OPS).
 const BLANK = { none: null, one: '', two: ['', ''], many: [] };
@@ -49,7 +49,7 @@ export default function ConditionRow({ condition, fields, showProblem, onChange,
   };
 
   return (
-    <li className="flex flex-col gap-1.5 rounded-lg border border-gray-200 p-2">
+    <li className="flex flex-col gap-1.5 rounded-lg border border-hairline p-2">
       <div className="flex items-center gap-1">
         <select className={`${FIELD} min-w-0 flex-1`} value={condition.field} onChange={(e) => setField(e.target.value)} aria-label="Property">
           <option value="" disabled>Choose a property…</option>
@@ -61,7 +61,7 @@ export default function ConditionRow({ condition, fields, showProblem, onChange,
           title="Remove condition"
           aria-label="Remove condition"
           onClick={onRemove}
-          className="flex-none cursor-pointer rounded-lg p-2 text-gray-500 hover:bg-hover hover:text-ink"
+          className="flex-none cursor-pointer rounded-lg p-2 text-ink-faint hover:bg-hover hover:text-ink"
         >
           <CloseIcon />
         </button>
@@ -74,7 +74,7 @@ export default function ConditionRow({ condition, fields, showProblem, onChange,
           <FilterValueInput key={`${condition.field}\n${condition.op}`} op={condition.op} field={field} value={condition.value} onChange={(value) => onChange({ ...condition, value })} />
         </>
       )}
-      {problem && <p role="alert" className="text-xs text-amber-700">Not applied yet: {problem}</p>}
+      {problem && <p role="alert" className="text-xs text-warning-text">Not applied yet: {problem}</p>}
     </li>
   );
 }

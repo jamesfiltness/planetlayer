@@ -5,6 +5,7 @@ import { notFound } from './errors.js';
 import { hostGuard, parseAllowedHosts } from './http/hostGuard.js';
 import { layersRouter } from './routes/layers.js';
 import { mapsRouter } from './routes/maps.js';
+import { settingsRouter } from './routes/settings.js';
 
 const DEFAULT_CLIENT_DIR = path.join(import.meta.dirname, '../client/dist');
 
@@ -17,6 +18,7 @@ export function createApp({ clientDir = DEFAULT_CLIENT_DIR, allowedHosts = parse
 
   app.use('/api/maps', mapsRouter);
   app.use('/api/layers', layersRouter);
+  app.use('/api/settings', settingsRouter);
   app.use('/api', (req, res, next) => next(notFound(`No API route for ${req.method} ${req.originalUrl}.`)));
 
   app.use(express.static(clientDir));

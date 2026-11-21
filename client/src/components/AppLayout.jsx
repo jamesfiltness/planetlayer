@@ -20,7 +20,7 @@ export default function AppLayout() {
     // `isolate` keeps the header's z-index inside this frame. Without it the
     // header would also sit above modals and menus, which are added to the end
     // of the body with no z-index of their own.
-    <div className="relative isolate flex h-full flex-col bg-gray-50">
+    <div className="relative isolate flex h-full flex-col bg-page">
       <AppHeader floating={onMap} mapName={mapName} />
       <main className="min-h-0 flex-1 overflow-auto">
         <Outlet context={context} />

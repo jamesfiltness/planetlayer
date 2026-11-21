@@ -63,23 +63,23 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
     return false;
   };
 
-  if (error) return <p className="text-red-700">Couldn't read the layer's properties: {error}</p>;
-  if (!fields) return <p className="text-gray-500">Reading the layer's properties…</p>;
-  if (!fields.length) return <p className="text-gray-500">This layer's features have no properties to filter by.</p>;
+  if (error) return <p className="text-danger-text">Couldn't read the layer's properties: {error}</p>;
+  if (!fields) return <p className="text-ink-faint">Reading the layer's properties…</p>;
+  if (!fields.length) return <p className="text-ink-faint">This layer's features have no properties to filter by.</p>;
 
   return (
     <div className="flex flex-col gap-3">
       {rows.length > 1 && (
         <div className="flex items-center gap-2">
           <span>Show features matching</span>
-          <div role="group" aria-label="Match" className="flex rounded-lg border border-gray-300 p-0.5">
+          <div role="group" aria-label="Match" className="flex rounded-lg border border-edge p-0.5">
             {FILTER_MATCHES.map((m) => (
               <button
                 key={m}
                 type="button"
                 aria-pressed={match === m}
                 onClick={() => apply(m, rows)}
-                className={`cursor-pointer rounded-md px-2 py-0.5 ${match === m ? 'bg-accent text-white' : 'hover:bg-hover'}`}
+                className={`cursor-pointer rounded-md px-2 py-0.5 ${match === m ? 'bg-accent text-on-accent' : 'hover:bg-hover'}`}
               >
                 {MATCH_LABELS[m]}
               </button>
@@ -107,7 +107,7 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
         <Button
           disabled={rows.length >= MAX_FILTER_CONDITIONS}
           onClick={() => apply(match, [...rows, withKey({ field: '', op: 'eq', value: '' })])}
-          className="border border-gray-300"
+          className="border border-edge"
         >
           <PlusIcon /> Add condition
         </Button>
@@ -115,12 +115,12 @@ export default function FilterTab({ layer, onChange, onSaveAsLayer }) {
       </div>
 
       {layer.filter && (
-        <p aria-live="polite" className="text-gray-500">
+        <p aria-live="polite" className="text-ink-faint">
           Showing {layer.matching ?? '…'} of {layer.count} features
         </p>
       )}
 
-      <hr className="border-gray-200" />
+      <hr className="border-hairline" />
       <SaveAsLayerForm disabled={!rows.length || (layer.filter && layer.matching === 0)} onSave={save} />
     </div>
   );

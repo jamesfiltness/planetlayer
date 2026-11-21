@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router';
 
-const NAV_LINK = 'rounded-lg py-1 text-[14px] font-medium text-gray-500 hover:text-ink aria-[current=page]:text-ink';
+const NAV_LINK = 'rounded-lg py-1 text-[14px] font-medium text-ink-faint hover:text-ink aria-[current=page]:text-ink';
 
 /**
  * The bar across the top of every page: the PlanetLayer wordmark, the places to go, and
@@ -18,11 +18,12 @@ export default function AppHeader({ floating, mapName }) {
   const { pathname } = useLocation();
   // A map is one of your maps, so Maps stays lit while one is open.
   const onMaps = pathname === '/' || pathname.startsWith('/maps/');
+  const onSettings = pathname === '/settings';
 
   return (
     <header
       // Above the map's panels (z-10), which would otherwise slide over it on a short window.
-      className={`chrome-float z-20 flex h-header flex-none items-center gap-7 border-b border-black/10 px-5 font-brand ${
+      className={`chrome-float z-20 flex h-header flex-none items-center gap-7 border-b border-hairline px-5 font-brand ${
         floating ? 'absolute inset-x-0 top-0' : 'relative'
       }`}
     >
@@ -38,10 +39,11 @@ export default function AppHeader({ floating, mapName }) {
       </Link>
       <nav aria-label="Main" className="flex flex-none items-center gap-5">
         <Link to="/" aria-current={onMaps ? 'page' : undefined} className={NAV_LINK}>Maps</Link>
+        <Link to="/settings" aria-current={onSettings ? 'page' : undefined} className={NAV_LINK}>Settings</Link>
       </nav>
       {mapName && (
         <>
-          <span className="-mx-2 h-5 w-px flex-none bg-gray-300" />
+          <span className="-mx-2 h-5 w-px flex-none bg-edge" />
           <h1 className="min-w-0 truncate font-semibold" title={mapName}>{mapName}</h1>
         </>
       )}

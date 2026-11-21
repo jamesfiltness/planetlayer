@@ -117,10 +117,8 @@ docker compose exec app npm test
 
 (Locally, `cd server && npm test` uses `DATABASE_URL`, like the server.) `server/test/fixtures/make-fixtures.sh` rebuilds the archive fixtures.
 
-## Base map tiles
+## Base map
 
-Tiles come from `tile.openstreetmap.org`, which is fine for light personal use under the [OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/). For anything heavier, point the client at another tile server when building:
+The base map comes from [OpenFreeMap](https://openfreemap.org/): OpenStreetMap data as vector tiles, free to use with no API key or sign-up.
 
-```sh
-docker compose build --build-arg VITE_TILES='https://your.tiles/{z}/{x}/{y}.png'
-```
+Choose a base map in **Settings → Theme**. Each theme is one of OpenFreeMap's styles: Light (Positron, the default), Bright, Liberty, Dark and Fiord. The dark ones also switch the rest of the app to dark. The list lives in `shared/themes.js`; the colours for light and dark are in `client/src/theme.css`.

@@ -40,7 +40,7 @@ export default function MapPage() {
 
   if (missing) return <NotFound message="That map doesn't exist. It may have been deleted." />;
   // Wait for the map, so MapLibre starts at its saved view instead of jumping there.
-  if (!map) return <div className="h-full bg-gray-100" />;
+  if (!map) return <div className="h-full bg-page" />;
   // Keyed on the id, so opening another map starts from a fresh map and layer list.
   return <MapView key={mapId} mapId={mapId} initialView={map.view} />;
 }

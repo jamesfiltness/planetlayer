@@ -2,8 +2,8 @@ const BASE = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 cursor-point
 
 const VARIANTS = {
   ghost: 'hover:enabled:bg-hover',
-  primary: 'bg-accent text-white hover:enabled:bg-accent/90',
-  danger: 'bg-red-600 text-white hover:enabled:bg-red-700',
+  primary: 'bg-accent text-on-accent hover:enabled:bg-accent/90',
+  danger: 'bg-danger text-white hover:enabled:bg-danger/90',
 };
 
 export default function Button({ variant = 'ghost', type = 'button', className = '', ...props }) {

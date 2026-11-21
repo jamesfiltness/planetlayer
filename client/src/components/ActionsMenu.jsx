@@ -16,20 +16,20 @@ export default function ActionsMenu({ label, items }) {
     <Menu>
       <MenuButton
         aria-label={label}
-        className="flex-none cursor-pointer rounded-lg p-2 text-gray-500 hover:bg-hover hover:text-ink data-open:bg-hover"
+        className="flex-none cursor-pointer rounded-lg p-2 text-ink-faint hover:bg-hover hover:text-ink data-open:bg-hover"
       >
         <MoreIcon />
       </MenuButton>
       <MenuItems
         anchor={{ to: 'bottom end', gap: 4 }}
-        className="z-40 min-w-36 rounded-xl bg-white p-1.5 shadow-panel outline-none"
+        className="z-40 min-w-36 rounded-xl bg-surface p-1.5 shadow-panel outline-none"
       >
         {items.map((item) => (
           <MenuItem key={item.label}>
             <button
               type="button"
               onClick={item.onSelect}
-              className={`${ITEM} ${item.danger ? 'text-red-700 data-focus:bg-red-50' : 'data-focus:bg-hover'}`}
+              className={`${ITEM} ${item.danger ? 'text-danger-text data-focus:bg-danger-wash' : 'data-focus:bg-hover'}`}
             >
               {item.label}
             </button>

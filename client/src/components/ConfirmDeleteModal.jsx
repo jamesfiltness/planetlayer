@@ -29,7 +29,7 @@ export default function ConfirmDeleteModal({ title, children, onConfirm, onClose
         </>
       }
     >
-      <p className="text-gray-600">{children}</p>
+      <p className="text-ink-muted">{children}</p>
       <ModalError>{error}</ModalError>
     </Modal>
   );

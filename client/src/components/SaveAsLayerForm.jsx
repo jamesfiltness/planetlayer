@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Button from './Button.jsx';
 
-const FIELD = 'rounded-md border border-gray-300 px-2 py-1.5';
+const FIELD = 'rounded-md border border-edge px-2 py-1.5';
 
 /**
  * The foot of the Filter tab: copies the features the filter lets through

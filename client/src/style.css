@@ -3,16 +3,14 @@
    the map container win. Unlayered, MapLibre's rules (such as
    `.maplibregl-map { position: relative }`) would beat every utility. */
 @import "maplibre-gl/dist/maplibre-gl.css" layer(components);
+/* The colours, light and dark. */
+@import "./theme.css";
+/* MapLibre's own controls and popups, in those colours. */
+@import "./maplibre-theme.css";
 
-/* Design tokens, used as Tailwind classes: bg-accent, bg-hover, shadow-panel… */
+/* Tokens that don't change with the theme, used as Tailwind classes. */
 @theme {
-  --color-accent: #4363d8;
-  --color-hover: #eef;
-  --color-ink: #222;
-  /* The wordmark's navy, and the face the header is set in (loaded in index.html). */
-  --color-brand: #16233a;
   --font-brand: 'Manrope', 'Helvetica Neue', ui-sans-serif, system-ui, sans-serif;
-  --shadow-panel: 0 4px 16px rgb(0 0 0 / 0.2);
   /* The app header's height (h-header), and where a panel floating on the map
      starts so that it clears the header (top-map-top). */
   --spacing-header: 56px;
@@ -26,6 +24,14 @@
   body {
     font: 14px/1.4 system-ui, sans-serif;
     color: var(--color-ink);
+    background: var(--color-page);
+  }
+  /* The keyboard focus ring in the accent colour, so it matches the theme
+     (blue on light, cream on dark) rather than the browser's own blue. In the
+     base layer, so an `outline-none` utility still turns it off. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
   }
 }
 
@@ -37,33 +43,24 @@
    background utility, which would win over it. */
 @layer components {
   .chrome-float {
-    background: rgb(255 255 255 / 0.72);
+    background: var(--color-float);
     backdrop-filter: blur(12px);
-  }
-}
-
-/* MapLibre builds popup HTML itself (see map/useFeaturePopup.js), so its
-   table is styled here rather than with classes. */
-@layer components {
-  .maplibregl-popup-content table {
-    border-collapse: collapse;
-  }
-  .maplibregl-popup-content th {
-    text-align: left;
-    padding-right: 8px;
-    color: #666;
-    font-weight: normal;
   }
 }
 
 /* Every dropdown draws its own chevron, since the browser's sits tight against
    the right edge once a select has a border. Unlayered, so the room it leaves
-   for the chevron wins over padding utilities such as `px-2`. */
+   for the chevron wins over padding utilities such as `px-2`. An image can't
+   read a CSS colour, so the chevron's stroke is written into it: ink-faint,
+   light (#6b7280) and dark (#9a9ca3). */
 select {
   appearance: none;
   padding-right: 28px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 12px;
+}
+:root[data-theme='dark'] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%239a9ca3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
 }

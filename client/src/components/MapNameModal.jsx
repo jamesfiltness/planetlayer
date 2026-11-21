@@ -42,7 +42,7 @@ export default function MapNameModal({ title, submitLabel, initialName = '', onS
           value={name}
           maxLength={MAX_LENGTH}
           onChange={(e) => setName(e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5"
+          className="rounded-md border border-edge px-2 py-1.5"
         />
       </label>
       <ModalError>{error}</ModalError>

@@ -4,12 +4,12 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 export default function Modal({ title, onClose, onSubmit, children, actions }) {
   return (
     <Dialog open onClose={onClose} className="relative z-50">
-      <DialogBackdrop className="fixed inset-0 bg-black/30" />
+      <DialogBackdrop className="fixed inset-0 bg-scrim" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel
           as={onSubmit ? 'form' : 'div'}
           onSubmit={onSubmit}
-          className="flex w-full max-w-sm flex-col gap-3 rounded-xl bg-white p-5 shadow-panel"
+          className="flex w-full max-w-sm flex-col gap-3 rounded-xl bg-surface p-5 shadow-panel"
         >
           <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
           {children}
@@ -21,5 +21,5 @@ export default function Modal({ title, onClose, onSubmit, children, actions }) {
 }
 
 export function ModalError({ children }) {
-  return children ? <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-red-800">{children}</p> : null;
+  return children ? <p role="alert" className="rounded-lg bg-danger-wash px-3 py-2 text-danger-text">{children}</p> : null;
 }

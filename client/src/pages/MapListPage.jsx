@@ -54,24 +54,24 @@ export default function MapListPage() {
         </header>
 
         {loadError && (
-          <div role="alert" className="flex items-center justify-between gap-4 rounded-xl bg-red-50 px-4 py-3 text-red-800">
+          <div role="alert" className="flex items-center justify-between gap-4 rounded-xl bg-danger-wash px-4 py-3 text-danger-text">
             Couldn't load your maps: {loadError}
             <Button onClick={load}>Try again</Button>
           </div>
         )}
 
-        {!maps && !loadError && <p className="text-gray-500">Loading maps…</p>}
+        {!maps && !loadError && <p className="text-ink-faint">Loading maps…</p>}
 
         {maps?.length === 0 && (
-          <div className="flex flex-col items-center gap-3 rounded-xl bg-white px-4 py-12 text-center ring-1 ring-black/5">
+          <div className="flex flex-col items-center gap-3 rounded-xl bg-surface px-4 py-12 text-center ring-1 ring-hairline">
             <h2 className="text-lg font-semibold">No maps yet</h2>
-            <p className="text-gray-600">Create a map, then add layers to it from files.</p>
+            <p className="text-ink-muted">Create a map, then add layers to it from files.</p>
             {newMap}
           </div>
         )}
 
         {maps?.length > 0 && (
-          <ul className="divide-y divide-gray-100 overflow-hidden rounded-xl bg-white ring-1 ring-black/5">
+          <ul className="divide-y divide-hairline overflow-hidden rounded-xl bg-surface ring-1 ring-hairline">
             {maps.map((map) => (
               <MapListItem
                 key={map.id}

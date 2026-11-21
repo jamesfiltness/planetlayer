@@ -37,6 +37,10 @@ export const api = {
   saveFilteredAsLayer: (id, filter, name) => send('POST', `/layers/${id}/filtered`, { filter, name }),
   deleteLayer: (id) => request(`/layers/${id}`, { method: 'DELETE' }),
   runTool: (mapId, tool, params) => send('POST', `/maps/${mapId}/tools/${tool}`, params),
+
+  settings: () => request('/settings'),
+  // Changes only the settings named, and resolves to all of them.
+  saveSettings: (changes) => send('PATCH', '/settings', changes),
   importFile: (mapId, file) => {
     const body = new FormData();
     body.append('file', file);

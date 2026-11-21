@@ -50,7 +50,7 @@ export default function LayersPanel({ layers, hidden, onToggle, editingId, onEdi
           ))}
         </ul>
       ) : (
-        <p className="px-2 pb-1.5 text-gray-500">No layers yet</p>
+        <p className="px-2 pb-1.5 text-ink-faint">No layers yet</p>
       )}
     </section>
   );
@@ -65,7 +65,7 @@ function LayerRow({ layer, visible, editing, onToggle, onEdit }) {
       <span className={`mr-1 flex-none ${visible ? '' : 'opacity-40'}`} style={{ color: layerColor(layer) }} title={layer.shape}>
         <ShapeIcon />
       </span>
-      <span className={`min-w-0 flex-1 truncate ${visible ? '' : 'text-gray-400'}`} title={layer.name}>{layer.name}</span>
+      <span className={`min-w-0 flex-1 truncate ${visible ? '' : 'text-ink-ghost'}`} title={layer.name}>{layer.name}</span>
       {layer.filter && (
         <span className="flex-none p-1.5 text-accent" title={filterSummary(layer)}>
           <FilterIcon size={14} />
@@ -81,7 +81,7 @@ function LayerRow({ layer, visible, editing, onToggle, onEdit }) {
         aria-label={`Edit ${layer.name}`}
         aria-pressed={editing}
         onClick={onEdit}
-        className={`${ICON_BUTTON} text-gray-600 ${editing ? 'bg-hover' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+        className={`${ICON_BUTTON} text-ink-muted ${editing ? 'bg-hover' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
       >
         <PencilIcon />
       </button>
@@ -91,7 +91,7 @@ function LayerRow({ layer, visible, editing, onToggle, onEdit }) {
         title={toggleLabel}
         aria-label={`${toggleLabel} ${layer.name}`}
         onClick={onToggle}
-        className={`${ICON_BUTTON} ${visible ? 'text-gray-600' : 'text-gray-400'}`}
+        className={`${ICON_BUTTON} ${visible ? 'text-ink-muted' : 'text-ink-ghost'}`}
       >
         {visible ? <EyeIcon /> : <EyeOffIcon />}
       </button>

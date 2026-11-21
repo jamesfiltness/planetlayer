@@ -59,6 +59,13 @@ describe('HTTP', () => {
     assert.equal((await fetch(`${base}/api/maps/${map.id}`)).status, 404);
   });
 
+  test('settings can be read and changed, and a bad change is a 400', async () => {
+    assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), { theme: 'positron' });
+    assert.deepEqual(await (await fetch(`${base}/api/settings`, json('PATCH', { theme: 'dark' }))).json(), { theme: 'dark' });
+    assert.equal((await fetch(`${base}/api/settings`, json('PATCH', { theme: 'midnight' }))).status, 400);
+    assert.deepEqual(await (await fetch(`${base}/api/settings`)).json(), { theme: 'dark' });
+  });
+
   test('a bad name is a 400 with a message', async () => {
     const res = await fetch(`${base}/api/maps`, json('POST', { name: ' ' }));
     assert.equal(res.status, 400);

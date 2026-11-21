@@ -4,10 +4,10 @@ import ActionsMenu from './ActionsMenu.jsx';
 export default function MapListItem({ map, onRename, onDelete }) {
   const layers = `${map.layer_count} ${map.layer_count === 1 ? 'layer' : 'layers'}`;
   return (
-    <li className="flex items-center gap-2 py-1 pr-2 pl-1 hover:bg-gray-50">
+    <li className="flex items-center gap-2 py-1 pr-2 pl-1 hover:bg-hover">
       <Link to={`/maps/${map.id}`} className="min-w-0 flex-1 rounded-lg px-3 py-2">
         <span className="block truncate font-medium">{map.name}</span>
-        <span className="text-[13px] text-gray-500">
+        <span className="text-[13px] text-ink-faint">
           {layers} · Edited <time dateTime={map.updated_at}>{formatEdited(new Date(map.updated_at))}</time>
         </span>
       </Link>
