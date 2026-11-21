@@ -1,17 +1,23 @@
 import { HEATMAP_COLORS } from '../../../../shared/colors.js';
+import { heatmapIntensity } from './heatmapIntensity.js';
 import { isNumber } from './shapes.js';
 
 /**
  * Blurs the points into a heatmap (the `heatmap` symbology; see
  * shared/symbology.js), coloured by HEATMAP_COLORS from sparse to dense.
  * Only the overall opacity of the layer's other style values applies.
+ * The intensity is lowered when zoomed out, so crowded points don't turn
+ * solid red (see heatmapIntensity.js).
+ *
+ * @param {{ style: object, count: number, matching: number | null, extent: number[] | null }} layer
  */
-export function heatmap({ style }, prefix, source) {
-  const { radius, intensity } = style.symbology;
+export function heatmap({ style, count, matching, extent }, prefix, source) {
+  const { symbology } = style;
   return [{ id: `${prefix}-heat`, type: 'heatmap', source, paint: {
-    'heatmap-weight': heatmapWeight(style.symbology),
-    'heatmap-radius': radius,
-    'heatmap-intensity': intensity,
+    'heatmap-weight': heatmapWeight(symbology),
+    'heatmap-radius': symbology.radius,
+    // While a new filter is being saved, the count it lets through isn't known yet.
+    'heatmap-intensity': heatmapIntensity(symbology, matching ?? count, extent),
     'heatmap-opacity': style.opacity,
     // Density runs from 0 where there are no points; that stays clear, and
     // the colours spread evenly over the rest.
