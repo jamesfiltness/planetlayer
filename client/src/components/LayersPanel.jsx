@@ -12,7 +12,7 @@ const filterSummary = (layer) =>
   layer.matching === null ? 'Filtered' : `Filtered: ${layer.matching} of ${layer.count} features shown`;
 
 /**
- * The floating list of a map's layers, down the left side below the header.
+ * The floating list of a map's layers, down the left side below the app header.
  * Each row shows the layer's shape (drawn in the layer's colour, so the panel
  * doubles as a legend), its name, a funnel if it's filtered, a pencil that
  * opens it in the layer editor, and an eye that shows or hides it on the map.
@@ -30,7 +30,7 @@ export default function LayersPanel({ layers, hidden, onToggle, editingId, onEdi
   return (
     <section
       aria-label="Layers"
-      className="absolute top-20 left-4 z-10 flex max-h-[calc(100vh-200px)] w-80 max-w-[calc(100vw-32px)] flex-col rounded-xl bg-white p-1.5 shadow-panel"
+      className="chrome-float absolute top-map-top left-4 z-10 flex max-h-[calc(100vh_-_var(--spacing-map-top)_-_120px)] w-80 max-w-[calc(100vw-32px)] flex-col rounded-xl p-1.5 shadow-panel"
     >
       <div className="flex items-center justify-between pl-2">
         <h2 className="py-1.5 font-semibold">Layers</h2>

@@ -27,7 +27,7 @@ export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSa
   return (
     <section
       aria-label={`Edit ${layer.name}`}
-      className="absolute top-4 right-4 z-10 flex max-h-[calc(100vh-32px)] w-80 max-w-[calc(100vw-32px)] flex-col rounded-xl bg-white shadow-panel"
+      className="chrome-float absolute top-map-top right-4 z-10 flex max-h-[calc(100vh_-_var(--spacing-map-top)_-_16px)] w-80 max-w-[calc(100vw-32px)] flex-col rounded-xl shadow-panel"
     >
       <header className="flex items-center gap-1 py-1.5 pr-1.5 pl-3.5">
         <h2 className="min-w-0 flex-1 truncate font-semibold" title={layer.name}>{layer.name}</h2>

@@ -3,7 +3,7 @@ export default function StatusBanner({ status, onDismiss }) {
   return (
     <div
       role={status.error ? 'alert' : 'status'}
-      className={`absolute top-4 left-1/2 z-10 flex w-max max-w-[min(560px,calc(100vw-32px))] -translate-x-1/2 items-start gap-2 rounded-xl py-2 pr-2 pl-3.5 shadow-panel max-sm:top-20
+      className={`absolute top-map-top left-1/2 z-10 flex w-max max-w-[min(560px,calc(100vw-32px))] -translate-x-1/2 items-start gap-2 rounded-xl py-2 pr-2 pl-3.5 shadow-panel
         ${status.error ? 'bg-red-50 text-red-800' : 'bg-white'}`}
     >
       <span className="flex-1 py-1 wrap-anywhere">{status.message}</span>

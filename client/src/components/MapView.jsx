@@ -7,11 +7,10 @@ import { useMapLayers } from '../hooks/useMapLayers.js';
 import { useStatus } from '../hooks/useStatus.js';
 import LayersPanel from './LayersPanel.jsx';
 import LayerEditor from './LayerEditor.jsx';
-import MapHeader from './MapHeader.jsx';
 import StatusBanner from './StatusBanner.jsx';
 import Toolbar from './Toolbar.jsx';
 
-export default function MapView({ mapId, name, initialView }) {
+export default function MapView({ mapId, initialView }) {
   const status = useStatus();
   const [container, map] = useMapLibre(initialView);
   const { layers, importFiles, setLayerStyle, setLayerFilter, saveFilteredAsLayer, deleteLayer, runTool } = useMapLayers(mapId, status);
@@ -43,7 +42,6 @@ export default function MapView({ mapId, name, initialView }) {
       }}
     >
       <div ref={container} className="absolute inset-0" />
-      <MapHeader name={name} />
       <LayersPanel layers={layers} hidden={hidden} onToggle={toggle} editingId={editingId} onEdit={setEditingId} onImport={importFiles} />
       {editing && (
         <LayerEditor
