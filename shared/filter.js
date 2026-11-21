@@ -12,7 +12,8 @@
 // - The negative operators (`ne`, `not_contains`, `not_in`) match features
 //   that don't have the property at all.
 // - The number operators only match values stored as numbers, so "less than
-//   5" never matches the text "3".
+//   5" never matches the text "3". (Import stores a property as numbers when
+//   all its values are numbers written as text; see server/importNumbers.js.)
 // - `eq`, `ne`, `in` and `not_in` compare by the type of the value given: a
 //   number to numbers, text to the property's text, true or false to booleans.
 // - Text operators ignore case.

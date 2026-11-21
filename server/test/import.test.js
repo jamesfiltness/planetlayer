@@ -93,5 +93,23 @@ describe('import', () => {
     assert.ok(Math.abs(x - 3) < 1e-6 && Math.abs(y - 42) < 1e-4, `got ${x}, ${y}`);
   });
 
-  test('unsupported extensions are refused', () => rejects400(importInto({ originalname: 'notes.txt', path: '/dev/null' }), /Unsupported file type/));
+  test('properties whose values are all numbers written as text are stored as numbers', async () => {
+    const [layer] = await importInto(await upload('numbers.geojson', collection(
+      [point(0, 0), { pop: '23.5', depth: 30, code: '007', id: '12345678901234567', mixed: '12', big: '1e400' }],
+      [point(1, 1), { pop: '9', depth: 4.5, code: '12', id: '1', mixed: 'abc', big: '2' }],
+      [point(2, 2), { pop: '-1e3' }],
+      [point(3, 3), { pop: '' }],
+      [point(4, 4), { pop: '23.23288965934862' }],
+    )));
+    const { rows } = await db.pool.query('SELECT props FROM features WHERE layer_id = $1 ORDER BY id', [layer.id]);
+    const values = (key) => rows.map((row) => row.props[key] ?? null);
+    assert.deepEqual(values('pop'), [23.5, 9, -1000, null, 23.23288965934862], 'converted, with empty text becoming null, however many decimals');
+    assert.deepEqual(values('depth'), [30, 4.5, null, null, null], 'numbers already stored as numbers are untouched');
+    assert.deepEqual(values('code'), ['007', '12', null, null, null], 'a leading zero keeps the whole property as text');
+    assert.deepEqual(values('id'), ['12345678901234567', '1', null, null, null], 'a whole number of more than 15 digits keeps it as text');
+    assert.deepEqual(values('mixed'), ['12', 'abc', null, null, null], 'any word keeps it as text');
+    assert.deepEqual(values('big'), ['1e400', '2', null, null, null], 'a number too big for a double keeps it as text');
+  });
+
+  test('unsupported extensions are refused',() => rejects400(importInto({ originalname: 'notes.txt', path: '/dev/null' }), /Unsupported file type/));
 });

@@ -3,6 +3,7 @@ import { FORMATS, SHAPES } from '../shared/spec.js';
 import { transaction } from './db.js';
 import { badRequest } from './errors.js';
 import { archiveSources, describe, readFeatures } from './gdal.js';
+import { convertNumberText } from './importNumbers.js';
 import { createLayer } from './layers.js';
 
 const CHUNK = 5000; // features staged per INSERT
@@ -45,6 +46,7 @@ async function store(db, mapId, name, info, features) {
     }
   }
   if (batch.length) await stage(db, batch);
+  await convertNumberText(db);
 
   if (!info.hasCrs) {
     const { rowCount: outOfRange } = await db.query(
