@@ -6,7 +6,7 @@ import { badRequest, notFound } from './errors.js';
 import { parseFilter } from './filter/parse.js';
 import { filterSql } from './filter/sql.js';
 import { countMatching, createLayer, touchMap } from './layers.js';
-import { parseId } from './validation.js';
+import { parseId, parseLayerName } from './validation.js';
 
 /**
  * Replaces the layer's filter; null removes it, so every feature shows.
@@ -37,7 +37,7 @@ export async function saveLayerFilter(id, value) {
 export async function saveFilteredAsLayer(id, body) {
   const filter = parseFilter(body?.filter);
   if (!filter) throw badRequest('Add a condition to filter by first.');
-  const custom = typeof body.name === 'string' ? body.name.trim() : '';
+  const custom = parseLayerName(body.name);
 
   return transaction(async (db) => {
     const { rows: [source] } = await db.query('SELECT id, map_id, name, shape FROM layers WHERE id = $1', [parseId(id)]);

@@ -1,7 +1,7 @@
 import { pool } from './db.js';
 import { notFound } from './errors.js';
 import { filterSql } from './filter/sql.js';
-import { parseId, parseStyle } from './validation.js';
+import { fitLayerName, parseId, parseStyle } from './validation.js';
 
 // New layers take a colour from this list by their id, so a layer's colour is
 // stable and layers created one after another differ.
@@ -24,7 +24,9 @@ function defaultStyle(shape, color) {
   };
 }
 
-// Call inside the transaction that adds the layer's features.
+// Call inside the transaction that adds the layer's features. A name that's
+// too long is cut short (see fitLayerName); check names people type first,
+// with parseLayerName.
 export async function createLayer(db, mapId, name, shape) {
   // Updating the map first also locks it, so it can't be deleted until the
   // transaction ends.
@@ -34,7 +36,7 @@ export async function createLayer(db, mapId, name, shape) {
   const { rows } = await db.query(
     `INSERT INTO layers AS l (id, map_id, name, shape, fill_color, fill_opacity, outline_color, outline_width, opacity)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING l.id, l.map_id, l.name, l.shape, ${STYLE}`,
-    [id, mapId, name, shape, style.fillColor, style.fillOpacity, style.outlineColor, style.outlineWidth, style.opacity],
+    [id, mapId, fitLayerName(name), shape, style.fillColor, style.fillOpacity, style.outlineColor, style.outlineWidth, style.opacity],
   );
   return rows[0];
 }

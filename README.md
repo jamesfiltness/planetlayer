@@ -51,6 +51,7 @@ Click a feature to see its properties.
 ```
 shared/spec.js          file formats, units and tool fields, used by both server and client
 shared/filter.js        layer filters: their operators and what makes a condition valid
+shared/limits.js        limits on map and layer names and on layer styles
 
 server/index.js         startup: migrate the database, then listen
 server/app.js           the Express app: middleware order, routers, client files, errors
@@ -80,6 +81,8 @@ The client is React with MapLibre, styled with [Tailwind CSS](https://tailwindcs
 
 The client uses this JSON API; errors come back as `{ "error": "message" }` with a 4xx or 5xx status.
 
+Names, of maps and of new layers, can be at most 200 characters (`shared/limits.js`).
+
 | Method | Path | Does |
 | --- | --- | --- |
 | GET | `/api/maps` | Every map, most recently edited first, with `layer_count` and its saved `view` (null until moved) |
@@ -90,9 +93,9 @@ The client uses this JSON API; errors come back as `{ "error": "message" }` with
 | DELETE | `/api/maps/:id` | Delete a map and its layers |
 | GET | `/api/maps/:id/layers` | The map's layers, each with its `style`, `filter` (or null), feature `count`, how many match the filter (`matching`) and property names (`fields`) |
 | POST | `/api/maps/:id/import` | Import a file (multipart field `file`) into the map |
-| POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`) |
+| POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`, plus an optional `name` for the new layer) |
 | PUT | `/api/layers/:id/style` | Restyle a layer: `{ "fillColor": "#rrggbb", "fillOpacity": 0–1, "outlineColor": "#rrggbb", "outlineWidth": 0–10, "opacity": 0–1 }` (all required; a line layer ignores the fill) |
-| PUT | `/api/layers/:id/filter` | Set a layer's filter: `{ "filter": { "match": "all" \| "any", "conditions": [{ "field", "op", "value" }] } }`, or `{ "filter": null }` for none (operators in `shared/filter.js`). Returns `{ "matching": n }` |
+| PUT | `/api/layers/:id/filter` | Set a layer's filter: `{ "filter": { "match": "all" \| "any", "conditions": [{ "field", "op", "value" }] } }`, or `{ "filter": null }` for none (operators in `shared/filter.js`). The whole body can be at most 48 KB. Returns `{ "matching": n }` |
 | GET | `/api/layers/:id/fields` | Every property of the layer's features, with its type, number range and most common values |
 | POST | `/api/layers/:id/filtered` | Save the features matching `{ "filter": …, "name": "…" }` (name optional) as a new layer in the same map |
 | DELETE | `/api/layers/:id` | Delete a layer |

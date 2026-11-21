@@ -30,6 +30,10 @@ describe('maps', () => {
     assert.equal((await maps.createMap('x'.repeat(200))).name.length, 200);
   });
 
+  test('the database refuses names over the limit, whatever the server checks', async () => {
+    await assert.rejects(db.pool.query("INSERT INTO maps (name) VALUES (repeat('x', 201))"), /check constraint/);
+  });
+
   test('rename changes the name and checks it the same way', async () => {
     const map = await maps.createMap('Draft');
     assert.equal((await maps.renameMap(map.id, ' Final ')).name, 'Final');

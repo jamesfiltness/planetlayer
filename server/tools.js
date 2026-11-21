@@ -2,7 +2,7 @@ import { SHAPES, TOOLS, UNITS } from '../shared/spec.js';
 import { transaction } from './db.js';
 import { badRequest } from './errors.js';
 import { createLayer } from './layers.js';
-import { parseId } from './validation.js';
+import { parseId, parseLayerName } from './validation.js';
 
 // Stored geometries are made valid on import, so the tools use them as they
 // are and can lean on the (layer_id, geom) index.
@@ -13,8 +13,10 @@ const TYPE = Object.fromEntries(SHAPES.map((shape, i) => [shape, i + 1]));
 // Each tool returns the SELECT whose (geom, props) rows become the new layer.
 // Only constants go into the SQL; anything from the request goes in `args`.
 const SQL = {
-  buffer({ layer: a }, { distance, unit, merge }) {
+  buffer({ layer: a }, { distance, unit, merge = false }) {
     if (!Object.hasOwn(UNITS, unit)) throw badRequest(`Unknown unit: ${unit}`);
+    // Strictly true or false: as text, "false" would be truthy and merge.
+    if (typeof merge !== 'boolean') throw badRequest('Merge must be true or false.');
     const metres = Number(distance) * UNITS[unit];
     if (!metres || Math.abs(metres) > 100_000) throw badRequest('Distance must be non-zero and at most 100 km.');
     if (metres < 0 && a.shape !== 'polygon') throw badRequest('Only area layers can take a negative distance.');
@@ -124,6 +126,7 @@ export async function runTool(mapId, id, params = {}) {
   const tool = TOOLS.find((t) => t.id === id);
   if (!tool || !Object.hasOwn(SQL, id)) throw badRequest(`Unknown tool: ${id}`);
   if (typeof params !== 'object' || params === null) throw badRequest('Expected a JSON object.');
+  const custom = parseLayerName(params.name);
 
   return transaction(async (db) => {
     const picked = {};
@@ -132,7 +135,6 @@ export async function runTool(mapId, id, params = {}) {
       if (shapes) picked[field.key] = await loadLayer(db, mapId, params[field.key], field.label, shapes);
     }
     const { name, shape, args, sql } = SQL[id](picked, params);
-    const custom = typeof params.name === 'string' ? params.name.trim() : '';
     const layer = await createLayer(db, mapId, custom || name, shape);
 
     // The new layer's id is bound after the tool's own parameters.

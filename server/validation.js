@@ -1,6 +1,5 @@
+import { MAX_LAYER_NAME, MAX_MAP_NAME, STYLE_LIMITS } from '../shared/limits.js';
 import { badRequest } from './errors.js';
-
-export const MAX_MAP_NAME = 200;
 
 export function parseId(value) {
   const n = typeof value === 'number' || (typeof value === 'string' && value.trim() !== '') ? Number(value) : NaN;
@@ -10,9 +9,32 @@ export function parseId(value) {
 export function parseMapName(value) {
   const name = typeof value === 'string' ? value.trim() : '';
   if (!name) throw badRequest('Give the map a name.');
-  if (name.length > MAX_MAP_NAME) throw badRequest(`Map names can be at most ${MAX_MAP_NAME} characters.`);
+  if (characters(name) > MAX_MAP_NAME) throw badRequest(`Map names can be at most ${MAX_MAP_NAME} characters.`);
   return name;
 }
+
+/**
+ * A name typed for a new layer, which is optional: '' when none was given
+ * (missing, not text, or only spaces), so the caller uses its own.
+ */
+export function parseLayerName(value) {
+  const name = typeof value === 'string' ? value.trim() : '';
+  if (characters(name) > MAX_LAYER_NAME) throw badRequest(`Layer names can be at most ${MAX_LAYER_NAME} characters.`);
+  return name;
+}
+
+/**
+ * A name the app made up for a layer, cut short to MAX_LAYER_NAME if need
+ * be (with an ellipsis, so it's clear it was), and never empty.
+ */
+export function fitLayerName(name) {
+  const chars = Array.from(name.trim());
+  if (!chars.length) return 'Untitled layer';
+  return chars.length <= MAX_LAYER_NAME ? chars.join('') : `${chars.slice(0, MAX_LAYER_NAME - 1).join('').trimEnd()}…`;
+}
+
+// Counted as Postgres counts them (by code point), so the CHECKs agree.
+const characters = (text) => Array.from(text).length;
 
 // The limits match the CHECKs in migrations/004_map_view.sql.
 const VIEW_LIMITS = { lng: [-180, 180], lat: [-90, 90], zoom: [0, 24], bearing: [-180, 180], pitch: [0, 85] };
@@ -33,8 +55,6 @@ export function parseView(value) {
 }
 
 const COLOR = /^#[0-9a-f]{6}$/;
-// The limits match the CHECKs in migrations/005_layer_style.sql.
-const STYLE_LIMITS = { fillOpacity: [0, 1], outlineWidth: [0, 10], opacity: [0, 1] };
 
 /**
  * A layer's style: `{ fillColor, fillOpacity, outlineColor, outlineWidth, opacity }`.
