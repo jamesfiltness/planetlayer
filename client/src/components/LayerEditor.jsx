@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+import { useFieldSummaries } from '../hooks/useFieldSummaries.js';
 import ActionsMenu from './ActionsMenu.jsx';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 import FilterTab from './FilterTab.jsx';
@@ -11,7 +12,8 @@ const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-ink-fai
 /**
  * The floating editor for one layer, down the right side of the map. Its
  * header has the layer's name, a ⋯ menu for deleting the layer and a close
- * button; below are its Style and Filter tabs.
+ * button; below are its Style and Filter tabs. The layer's properties are
+ * read once here, for both tabs.
  *
  * @param {object} props
  * @param {{ id: number, name: string, shape: string, count: number, matching: number | null, style: object, filter: object | null }} props.layer
@@ -23,6 +25,7 @@ const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-ink-fai
  */
 export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSaveFiltered, onDelete, onClose }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const summaries = useFieldSummaries(layer.id);
 
   return (
     <section
@@ -53,11 +56,11 @@ export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSa
         </TabList>
         <TabPanels className="overflow-auto p-3.5">
           <TabPanel className="outline-none">
-            <StyleTab shape={layer.shape} style={layer.style} onChange={onStyleChange} />
+            <StyleTab shape={layer.shape} style={layer.style} summaries={summaries} onChange={onStyleChange} />
           </TabPanel>
           {/* Kept mounted while hidden, so unfinished conditions survive a look at Style. */}
           <TabPanel unmount={false} className="outline-none">
-            <FilterTab key={layer.id} layer={layer} onChange={onFilterChange} onSaveAsLayer={onSaveFiltered} />
+            <FilterTab key={layer.id} layer={layer} summaries={summaries} onChange={onFilterChange} onSaveAsLayer={onSaveFiltered} />
           </TabPanel>
         </TabPanels>
       </TabGroup>

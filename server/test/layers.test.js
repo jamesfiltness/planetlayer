@@ -68,6 +68,37 @@ describe('layer styles', () => {
     assert.deepEqual((await listed(track.id)).style.symbology, SINGLE);
   });
 
+  test('categories and colour scales are saved, tidied up', async () => {
+    const categories = { type: 'categories', field: 'kind', categories: [{ value: 'well', color: '#AABBCC' }, { value: 3, color: '#112233' }, { value: false, color: '#445566' }], extra: 1 };
+    await layers.saveLayerStyle(areas.id, { ...STYLE, symbology: categories });
+    assert.deepEqual((await listed(areas.id)).style.symbology, {
+      type: 'categories', field: 'kind', categories: [{ value: 'well', color: '#aabbcc' }, { value: 3, color: '#112233' }, { value: false, color: '#445566' }],
+    });
+    const scale = { type: 'scale', field: 'depth', ramp: 'blues', min: -2, max: 40 };
+    await layers.saveLayerStyle(track.id, { ...STYLE, symbology: scale });
+    assert.deepEqual((await listed(track.id)).style.symbology, scale);
+  });
+
+  test("a categories or colour scale style's settings must be valid", async () => {
+    const category = (value, color = '#112233') => ({ value, color });
+    const many = Array.from({ length: 25 }, (_, i) => category(i));
+    const bad = [
+      { type: 'categories', categories: [] }, { type: 'categories', field: '', categories: [] },
+      { type: 'categories', field: 'x'.repeat(1001), categories: [] }, { type: 'categories', field: 'kind' },
+      { type: 'categories', field: 'kind', categories: many }, { type: 'categories', field: 'kind', categories: [category('a', 'red')] },
+      { type: 'categories', field: 'kind', categories: [category(null)] }, { type: 'categories', field: 'kind', categories: [category({})] },
+      { type: 'categories', field: 'kind', categories: [category('x'.repeat(201))] },
+      { type: 'categories', field: 'kind', categories: [category(3), category('3')] },
+      { type: 'categories', field: 'kind', categories: [null] },
+      { type: 'scale', field: 'depth', ramp: 'rainbow', min: 0, max: 1 }, { type: 'scale', field: 'depth', ramp: 'toString', min: 0, max: 1 },
+      { type: 'scale', field: 'depth', ramp: 'blues', min: 2, max: 1 }, { type: 'scale', field: 'depth', ramp: 'blues', min: '0', max: 1 },
+      { type: 'scale', field: 'depth', ramp: 'blues', min: 0, max: Infinity }, { type: 'scale', ramp: 'blues', min: 0, max: 1 },
+    ];
+    for (const symbology of bad) {
+      await assert.rejects(layers.saveLayerStyle(points.id, { ...STYLE, symbology }), status(400), `accepted ${JSON.stringify(symbology)}`);
+    }
+  });
+
   test('a missing layer is a 404', async () => {
     await assert.rejects(layers.saveLayerStyle(999999, STYLE), status(404));
     await assert.rejects(layers.saveLayerStyle('nope', STYLE), status(404));

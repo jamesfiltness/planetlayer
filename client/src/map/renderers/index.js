@@ -1,4 +1,6 @@
 import { sourceId } from '../style.js';
+import { categories } from './categories.js';
+import { scale } from './scale.js';
 import { single } from './single.js';
 
 // One renderer per symbology type in shared/symbology.js. Each is called as
@@ -12,7 +14,7 @@ import { single } from './single.js';
 // - A style layer with a given id always has the same paint and layout keys,
 //   whatever the settings: a key left out later would keep its old value.
 // - `visibility` is left to syncLayers, which hides and shows layers.
-const RENDERERS = { single };
+const RENDERERS = { single, categories, scale };
 
 /**
  * How to draw one of our layers: the options its GeoJSON source needs on top
