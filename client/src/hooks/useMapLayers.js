@@ -52,13 +52,14 @@ export function useMapLayers(mapId, { attempt, fail }) {
   };
 
   // The filter is applied by the server, so the map changes once the save is
-  // done. Only the latest save of each layer counts: an earlier one that
-  // finishes late is ignored.
+  // done. Saves finish in order (see useDebouncedSaver), but only the latest
+  // one's count is shown: an earlier one's would be for a filter already
+  // replaced on screen.
   const latestFilterSave = useRef(new Map()); // layer id → the newest save's token
   const filterSaver = useDebouncedSaver(useCallback((id, filter, options) => {
     const token = {};
     latestFilterSave.current.set(id, token);
-    api.saveLayerFilter(id, filter, options).then(
+    return api.saveLayerFilter(id, filter, options).then(
       ({ matching }) => latestFilterSave.current.get(id) === token &&
         setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, matching, revision: layer.revision + 1 } : layer))),
       (error) => fail(`Couldn't save the layer's filter: ${error.message}`),
