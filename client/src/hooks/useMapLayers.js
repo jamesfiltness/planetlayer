@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 import { mergeLayers } from './mergeLayers.js';
 import { useDebouncedSaver } from './useDebouncedSaver.js';
+import { useLayerVisibility } from './useLayerVisibility.js';
 
 /**
  * A map's layers as the server lists them (see listLayers in
@@ -23,7 +24,9 @@ import { useDebouncedSaver } from './useDebouncedSaver.js';
  */
 export function useMapLayers(mapId, { attempt, fail }, changes = 0) {
   const [layers, setLayers] = useState([]);
-  const update = (id, change) => setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, ...change } : layer)));
+  const update = useCallback(
+    (id, change) => setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, ...change } : layer))), []);
+  const { setLayerVisibility, visibilitySaving } = useLayerVisibility(update, fail);
 
   // Restyles the layer on the map straight away; the save follows shortly.
   const styleSaver = useDebouncedSaver(useCallback((id, style, options) =>
@@ -63,8 +66,8 @@ export function useMapLayers(mapId, { attempt, fail }, changes = 0) {
   const refresh = useCallback(async () => {
     const load = ++latestLoad.current;
     const loaded = await api.layers(mapId);
-    if (load === latestLoad.current) setLayers((current) => mergeLayers(loaded, current, { styleSaving, filterSaving }));
-  }, [mapId, styleSaving, filterSaving]);
+    if (load === latestLoad.current) setLayers((current) => mergeLayers(loaded, current, { styleSaving, filterSaving, visibilitySaving }));
+  }, [mapId, styleSaving, filterSaving, visibilitySaving]);
 
   useEffect(() => {
     refresh().catch((error) => fail(`Couldn't load layers: ${error.message}`));
@@ -102,12 +105,25 @@ export function useMapLayers(mapId, { attempt, fail }, changes = 0) {
     await refresh().catch((error) => fail(`Deleted, but couldn't reload the layers: ${error.message}`));
   };
 
-  // Resolves to whether the tool succeeded, so its form knows whether to close.
+  // Resolves to whether the tool succeeded, so its form knows whether to
+  // close. Warnings about the result stay in the status banner.
   const runTool = (tool, params) =>
     attempt('Running…', async () => {
-      await api.runTool(mapId, tool, params);
+      const { warnings = [] } = await api.runTool(mapId, tool, params);
       await refresh();
+      return warnings.join(' ');
     });
 
-  return { layers, importFiles, setLayerStyle, setLayerFilter, saveFilteredAsLayer, deleteLayer, runTool };
+  // Sets a property in place (see the Properties tab). Resolves to the
+  // server's answer, or throws so the tab can show why.
+  const calculateProperty = async (id, name, expression) => {
+    const result = await api.calculateProperty(id, name, expression);
+    await refresh().catch(() => {});
+    return result;
+  };
+
+  return {
+    layers, importFiles, setLayerStyle, setLayerFilter, setLayerVisibility, saveFilteredAsLayer, deleteLayer, runTool,
+    calculateProperty,
+  };
 }

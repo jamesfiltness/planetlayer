@@ -17,7 +17,7 @@ export const inspectTools = [
     name: 'describe_layer',
     title: 'Describe a layer',
     description:
-      'Summarises every property of a layer\'s features: its type (string, number, boolean or mixed), '
+      'Summarises every property of a layer\'s features: its type (string, number, boolean, object, list or mixed), '
       + 'its range if it holds numbers, how many different values it has and its most common values with their counts. '
       + 'Call this before filtering, styling or adding up a property, to use its real name and values '
       + '(a status might be "broken" or "Non-Functional"). The summary covers every feature, ignoring the layer\'s filter.',

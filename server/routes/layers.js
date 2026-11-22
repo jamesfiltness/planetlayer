@@ -3,11 +3,19 @@ import { Router } from 'express';
 import { fieldSummaries } from '../filter/fields.js';
 import { saveFilteredAsLayer, saveLayerFilter } from '../layerFilter.js';
 import { deleteLayer, layerGeoJson, saveLayerStyle } from '../layers.js';
+import { setLayerVisibility } from '../layerVisibility.js';
+import { calculateProperty } from '../properties/calculate.js';
 
 export const layersRouter = Router();
 
 layersRouter.put('/:id/style', async (req, res) => {
   await saveLayerStyle(req.params.id, req.body);
+  res.status(204).end();
+});
+
+// Shows or hides the layer on the map: `{ "visible": true | false }`.
+layersRouter.put('/:id/visible', async (req, res) => {
+  await setLayerVisibility(req.params.id, req.body?.visible);
   res.status(204).end();
 });
 
@@ -18,6 +26,11 @@ layersRouter.put('/:id/filter', async (req, res) => {
 
 layersRouter.get('/:id/fields', async (req, res) => {
   res.json(await fieldSummaries(req.params.id));
+});
+
+// Sets a property from an expression: `{ "name": "…", "expression": "…" }`.
+layersRouter.post('/:id/properties/calculate', async (req, res) => {
+  res.json(await calculateProperty(req.params.id, req.body ?? {}));
 });
 
 layersRouter.post('/:id/filtered', async (req, res) => {

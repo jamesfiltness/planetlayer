@@ -95,11 +95,11 @@ describe('import', () => {
 
   test('properties whose values are all numbers written as text are stored as numbers', async () => {
     const [layer] = await importInto(await upload('numbers.geojson', collection(
-      [point(0, 0), { pop: '23.5', depth: 30, code: '007', id: '12345678901234567', mixed: '12', big: '1e400' }],
-      [point(1, 1), { pop: '9', depth: 4.5, code: '12', id: '1', mixed: 'abc', big: '2' }],
-      [point(2, 2), { pop: '-1e3' }],
-      [point(3, 3), { pop: '' }],
-      [point(4, 4), { pop: '23.23288965934862' }],
+      [point(0, 0), { pop: '23.5', depth: 30, code: '007', id: '12345678901234567', mixed: '12', big: '1e400', count: ' 4 ', none: 'n/a' }],
+      [point(1, 1), { pop: '9', depth: 4.5, code: '12', id: '1', mixed: 'abc', big: '2', count: 'N/A', none: '-' }],
+      [point(2, 2), { pop: '-1e3', count: 'none' }],
+      [point(3, 3), { pop: '', count: 'null' }],
+      [point(4, 4), { pop: '23.23288965934862', count: '-' }],
     )));
     const { rows } = await db.pool.query('SELECT props FROM features WHERE layer_id = $1 ORDER BY id', [layer.id]);
     const values = (key) => rows.map((row) => row.props[key] ?? null);
@@ -109,6 +109,8 @@ describe('import', () => {
     assert.deepEqual(values('id'), ['12345678901234567', '1', null, null, null], 'a whole number of more than 15 digits keeps it as text');
     assert.deepEqual(values('mixed'), ['12', 'abc', null, null, null], 'any word keeps it as text');
     assert.deepEqual(values('big'), ['1e400', '2', null, null, null], 'a number too big for a double keeps it as text');
+    assert.deepEqual(values('count'), [4, null, null, null, null], 'spaces are trimmed, and "no value" markers become empty');
+    assert.deepEqual(values('none'), ['n/a', '-', null, null, null], 'but a property with no numbers at all stays as it is');
   });
 
   test('unsupported extensions are refused',() => rejects400(importInto({ originalname: 'notes.txt', path: '/dev/null' }), /Unsupported file type/));

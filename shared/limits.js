@@ -23,3 +23,9 @@ export const STYLE_LIMITS = {
   outlineWidth: [0, 10],
   opacity: [0, 1],
 };
+
+/**
+ * The most characters the name of a property made by Calculate property can
+ * have. Properties loaded from files keep whatever names they have.
+ */
+export const MAX_PROPERTY_NAME = 100;

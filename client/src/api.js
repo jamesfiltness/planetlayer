@@ -38,9 +38,14 @@ export const api = {
   // Resolves to `{ matching }`, the number of features the filter lets through.
   // `keepalive` as for saveMapView.
   saveLayerFilter: (id, filter, { keepalive = false } = {}) => send('PUT', `/layers/${id}/filter`, { filter }, { keepalive }),
+  // Shows (true) or hides (false) a layer; it's saved, so it lasts.
+  setLayerVisibility: (id, visible) => send('PUT', `/layers/${id}/visible`, { visible }),
   layerFields: (id) => request(`/layers/${id}/fields`),
+  // Resolves to `{ name, numbers, empty }`.
+  calculateProperty: (id, name, expression) => send('POST', `/layers/${id}/properties/calculate`, { name, expression }),
   saveFilteredAsLayer: (id, filter, name) => send('POST', `/layers/${id}/filtered`, { filter, name }),
   deleteLayer: (id) => request(`/layers/${id}`, { method: 'DELETE' }),
+  // Resolves to the new layer, with any `warnings` about the result.
   runTool: (mapId, tool, params) => send('POST', `/maps/${mapId}/tools/${tool}`, params),
 
   settings: () => request('/settings'),

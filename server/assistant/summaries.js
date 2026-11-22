@@ -8,12 +8,13 @@ export const mapSummary = ({ id, name, layer_count, updated_at }) => ({ id, name
 /**
  * A layer as listLayers or getLayer in layers.js gives it. `count` is every
  * feature; `matching` is how many its filter lets through, which is what
- * the map shows and the analysis tools use. `fields` lists property names
+ * the map shows and the analysis tools use. `visible` is false when the
+ * layer is hidden on the map (the tools still use it). `fields` lists property names
  * seen on its first 100 features (describe_layer reads them all).
  */
 export function layerSummary(layer) {
-  const { id, map_id, name, shape, count, matching, filter, fields, extent, style } = layer;
-  return { id, map_id, name, shape, count, matching, filter, fields, extent, style: style.symbology };
+  const { id, map_id, name, shape, visible, count, matching, filter, fields, extent, style } = layer;
+  return { id, map_id, name, shape, visible, count, matching, filter, fields, extent, style: style.symbology };
 }
 
 /**

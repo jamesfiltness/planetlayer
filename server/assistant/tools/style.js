@@ -37,7 +37,8 @@ export const styleTools = [
     title: 'Style a layer',
     description:
       'Changes how a layer is drawn: its style type (such as colouring areas by a property, to show a ranking), '
-      + 'and its fill colour, outline and opacity. Settings left out stay as they are.',
+      + 'and its fill colour, outline and opacity. Settings left out stay as they are. '
+      + 'Gives back every style setting as saved. To hide a layer, use set_layer_visibility rather than an opacity of 0.',
     input: {
       layer_id: layerId(),
       symbology: symbology.optional(),
@@ -58,11 +59,23 @@ export const styleTools = [
         opacity: opacity ?? style.opacity,
         symbology: wanted ? await completeSymbology(layer, wanted) : style.symbology,
       });
+      // Every setting as saved, not just the style type a layer summary
+      // has, so the model can see its change took.
       const saved = await getLayer(layer.id);
-      return { layer: layerSummary(saved) };
+      return { layer: { ...layerSummary(saved), style: savedStyle(saved.style) } };
     },
   },
 ];
+
+/** A layer's style, named as style_layer's arguments are. */
+const savedStyle = ({ symbology: saved, fillColor, fillOpacity, outlineColor, outlineWidth, opacity }) => ({
+  symbology: saved,
+  fill_color: fillColor,
+  fill_opacity: fillOpacity,
+  outline_color: outlineColor,
+  outline_width: outlineWidth,
+  opacity,
+});
 
 /**
  * The symbology `wanted` asks for, with whatever it leaves out filled in

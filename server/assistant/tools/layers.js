@@ -1,7 +1,8 @@
-// Tools for managing layers: renaming and deleting them.
+// Tools for managing layers: renaming, showing or hiding, and deleting them.
 import * as z from 'zod';
 import { deleteLayer, getLayer, renameLayer } from '../../layers.js';
 import { MAX_LAYER_NAME } from '../../../shared/limits.js';
+import { setLayerVisibility } from '../../layerVisibility.js';
 import { layerId } from '../schemas.js';
 import { layerSummary } from '../summaries.js';
 
@@ -12,6 +13,17 @@ export const layerTools = [
     description: 'Renames a layer. Give results names that say what they show, such as "Broken pumps, 2 km catchments".',
     input: { layer_id: layerId(), name: z.string().describe(`The new name, at most ${MAX_LAYER_NAME} characters.`) },
     run: async ({ layer_id, name }) => ({ layer: layerSummary(await renameLayer(layer_id, name)) }),
+  },
+  {
+    name: 'set_layer_visibility',
+    title: 'Show or hide a layer',
+    description: 'Shows or hides a layer on the map, as the eye in the Layers panel does. It\'s saved, so a hidden layer '
+      + 'stays hidden when the map is opened again. Use it to focus the map on a result. A hidden layer still works in the analysis tools.',
+    input: { layer_id: layerId(), visible: z.boolean().describe('true to show the layer, false to hide it.') },
+    run: async ({ layer_id, visible }) => {
+      await setLayerVisibility(layer_id, visible);
+      return { layer: layerSummary(await getLayer(layer_id)) };
+    },
   },
   {
     name: 'delete_layer',

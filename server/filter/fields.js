@@ -5,7 +5,8 @@ import { parseId } from '../validation.js';
 // How many of a field's most common values are listed.
 const TOP_VALUES = 100;
 
-const SCALARS = new Set(['string', 'number', 'boolean']);
+// Each JSON type of value → the type a property holding only that is given.
+const TYPES = { string: 'string', number: 'number', boolean: 'boolean', object: 'object', array: 'list' };
 
 /**
  * A summary of every property the layer's features have, for building
@@ -17,13 +18,13 @@ const SCALARS = new Set(['string', 'number', 'boolean']);
  *
  * @returns {Promise<Array<{
  *   name: string,
- *   type: 'string' | 'number' | 'boolean' | 'mixed',
+ *   type: 'string' | 'number' | 'boolean' | 'object' | 'list' | 'mixed',
  *   min: number | null, max: number | null,
  *   distinct: number,
  *   values: Array<{ value: string | number | boolean, count: number }>
  * }>>} sorted by name. `type` is `string` for a property that is always
- *   null, and `mixed` for one holding more than one type of value (or
- *   objects or lists). `distinct` counts the different non-null values;
+ *   null, `object` or `list` for one holding only JSON objects or only
+ *   lists, and `mixed` for one holding more than one type of value. `distinct` counts the different non-null values;
  *   `values` lists at most 100 of them, most common first.
  */
 export async function fieldSummaries(layerId) {
@@ -68,5 +69,5 @@ export async function fieldSummaries(layerId) {
 
 function fieldType(types) {
   if (!types.length) return 'string';
-  return types.length === 1 && SCALARS.has(types[0]) ? types[0] : 'mixed';
+  return types.length === 1 ? TYPES[types[0]] : 'mixed';
 }

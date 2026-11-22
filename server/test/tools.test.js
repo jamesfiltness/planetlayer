@@ -71,9 +71,16 @@ describe('tools', () => {
       assert.deepEqual(await stat('max'), [20, 20, null]);
     });
 
-    test('values that are not numbers are skipped, but still counted', async () => {
-      const props = await summarize({ features: layer.points.id, field: 'label', stat: 'sum' });
-      assert.deepEqual(props.map((p) => [p.count, p.label_sum]), [[2, 0], [2, 0], [0, 0]]);
+    test('a property stored only as text is refused, saying how to fix it, and makes no layer', async () => {
+      const before = await layerCount();
+      await assert.rejects(summarize({ features: layer.points.id, field: 'label', stat: 'sum' }),
+        (error) => error.status === 400 && /"label" has no numbers/.test(error.message) && /number\(<property>\)/.test(error.message));
+      assert.equal(await layerCount(), before);
+    });
+
+    test('a result with nothing to warn about has no warnings', async () => {
+      const out = await run('summarize', { areas: layer.areas.id, features: layer.points.id, field: 'pop' });
+      assert.deepEqual(out.warnings, []);
     });
   });
 
@@ -82,7 +89,8 @@ describe('tools', () => {
     const rows = await features(out);
     assert.equal(out.shape, 'line');
     assert.deepEqual(rows.map((f) => f.props.kind).sort(), ['x', 'x']);
-    assert.ok(rows.every((f) => f.props.name === 'road'));
+    assert.ok(rows.every((f) => f.props.name === 'road'), "the line's own name wins");
+    assert.deepEqual(rows.map((f) => f.props.name_2).sort(), ['A', 'B'], "and the area's is kept as name_2");
     assert.ok(Math.abs(rows.reduce((sum, f) => sum + f.length, 0) - 2) < 1e-9);
   });
 

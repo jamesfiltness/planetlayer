@@ -31,6 +31,7 @@ import { filterTools } from './tools/filter.js';
 import { inspectTools } from './tools/inspect.js';
 import { layerTools } from './tools/layers.js';
 import { mapTools } from './tools/maps.js';
+import { propertyTools } from './tools/properties.js';
 import { styleTools } from './tools/style.js';
 
 /** @type {Array<{ name: string, title: string, description: string, input: object, readOnly?: boolean, destructive?: boolean, run: Function }>} */
@@ -39,6 +40,7 @@ export const ASSISTANT_TOOLS = [
   ...layerTools,
   ...inspectTools,
   ...dataTools,
+  ...propertyTools,
   ...filterTools,
   ...styleTools,
   ...analysisTools,

@@ -127,9 +127,11 @@ describe('filters and styles', () => {
   test('style_layer fills in categories and a scale from the data', async () => {
     const { pumps, places } = await pumpsMap();
     const categories = await call('style_layer', { layer_id: pumps.id, symbology: { type: 'categories' } });
-    assert.deepEqual(categories.layer.style.categories.map((c) => c.value), ['broken', 'working']);
+    assert.deepEqual(categories.layer.style.symbology.categories.map((c) => c.value), ['broken', 'working']);
     const scale = await call('style_layer', { layer_id: places.id, symbology: { type: 'scale', field: 'pop', ramp: 'reds' }, opacity: 0.5 });
-    assert.deepEqual(scale.layer.style, { type: 'scale', field: 'pop', ramp: 'reds', min: 50, max: 300 });
+    assert.deepEqual(scale.layer.style.symbology, { type: 'scale', field: 'pop', ramp: 'reds', min: 50, max: 300 });
+    assert.equal(scale.layer.style.opacity, 0.5, 'every setting comes back, so the change can be seen to have taken');
+    assert.deepEqual(Object.keys(scale.layer.style).sort(), ['fill_color', 'fill_opacity', 'opacity', 'outline_color', 'outline_width', 'symbology']);
   });
 
   test("style_layer refuses a property the layer doesn't have, or one that doesn't suit the type", async () => {

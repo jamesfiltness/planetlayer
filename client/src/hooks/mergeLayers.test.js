@@ -2,7 +2,9 @@
 import { describe, expect, test } from 'vitest';
 import { mergeLayers } from './mergeLayers.js';
 
-const layer = (id, changes = {}) => ({ id, name: `Layer ${id}`, count: 3, matching: 3, filter: null, style: { fillColor: '#111111' }, ...changes });
+const layer = (id, changes = {}) => ({
+  id, name: `Layer ${id}`, count: 3, matching: 3, filter: null, style: { fillColor: '#111111' }, visible: true, data_version: 0, ...changes,
+});
 const nothingSaving = { styleSaving: () => false, filterSaving: () => false };
 const filter = { match: 'all', conditions: [{ field: 'status', op: 'eq', value: 'broken' }] };
 
@@ -22,6 +24,18 @@ describe('mergeLayers', () => {
     expect([filtered.revision, filtered.matching]).toEqual([5, 1]);
     const [grown] = mergeLayers([layer(1, { count: 9 })], [layer(1, { revision: 4 })], nothingSaving);
     expect(grown.revision).toBe(5);
+  });
+
+  test('bumps the revision when the features were changed in place, as by Calculate property', () => {
+    const [changed] = mergeLayers([layer(1, { data_version: 1 })], [layer(1, { revision: 4 })], nothingSaving);
+    expect(changed.revision).toBe(5);
+  });
+
+  test('takes a layer hidden elsewhere, but keeps one just shown or hidden here until it is saved', () => {
+    const [hidden] = mergeLayers([layer(1, { visible: false })], [layer(1, { revision: 0 })], nothingSaving);
+    expect(hidden.visible).toBe(false);
+    const [kept] = mergeLayers([layer(1)], [layer(1, { revision: 0, visible: false })], { ...nothingSaving, visibilitySaving: (id) => id === 1 });
+    expect(kept.visible).toBe(false);
   });
 
   test('keeps a style or filter still being saved, as it is newer than the server\'s', () => {

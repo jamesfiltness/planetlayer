@@ -19,7 +19,7 @@ const filterSummary = (layer) =>
  *
  * @param {object} props
  * @param {Array<{ id: number, name: string, shape: string, style: object, filter: object | null, count: number, matching: number | null }>} props.layers
- * @param {Set<number>} props.hidden ids of the layers currently hidden on the map
+ * @param {Set<number>} props.hidden ids of the layers currently hidden on the map (saved with each layer)
  * @param {(id: number) => void} props.onToggle shows a hidden layer, or hides a visible one
  * @param {number | null} props.editingId id of the layer open in the editor, if any
  * @param {(id: number) => void} props.onEdit opens a layer in the editor

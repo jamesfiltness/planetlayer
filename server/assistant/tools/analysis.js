@@ -13,13 +13,24 @@ import { newLayerSummary } from '../summaries.js';
 const DETAILS = {
   buffer: 'Each feature becomes the area within the distance of it, keeping its properties. '
     + 'With merge, overlapping areas join into one and lose their properties. A negative distance shrinks areas.',
-  intersect: 'The part of each feature inside the areas, with the properties of both. A feature crossing two areas becomes two.',
+  intersect: 'The part of each feature inside the areas, with the properties of both (an area\'s property whose name the feature has too becomes `<name>_2`). '
+    + 'A feature crossing two areas becomes two.',
   subtract: 'The part of each feature outside all the areas, keeping its own properties. Features entirely inside are dropped.',
   dissolve: 'Shapes sharing the property\'s value merge into one, with that value and a `count` of how many merged. '
     + 'Without a property, everything merges into one.',
   summarize: 'Each area gets `count`, the number of features in it, and, given a property, `<property>_<stat>` such as `pop_est_sum`. '
     + 'A point counts for every area it touches; a line or area counts once, in the area holding its centre. '
-    + 'Only values stored as numbers are added up. Areas keep their own properties.',
+    + 'Only values stored as numbers are added up (a property stored as text is refused; see calculate_property and number()). Areas keep their own properties.',
+  summarize_nearby: 'Each feature of layer keeps its shape and properties and gets `count`, the number of features within the distance of it '
+    + '(true distance on the ground), and, given a property, `<property>_<stat>` such as `pop_est_sum`. '
+    + 'A line or area counts by its centre, so a feature in reach of two others counts for both: totals can overlap. '
+    + 'With the same layer twice, a feature doesn\'t count itself. Only values stored as numbers are added up. '
+    + 'Use it for "how many people live within 2 km of each pump".',
+  spatial_join: 'Every feature of layer is kept with its properties, plus those of the nearest feature of join within the distance '
+    + '(measured between the shapes on the ground; 0 means touching), and `join_distance_<unit>`, how far that was. '
+    + 'A property name both have comes from join as `<name>_2`. Features with nothing in reach get nothing added. '
+    + 'Use it to give each feature its nearest neighbour\'s id, such as each settlement its nearest pump, '
+    + 'then summarize_nearby or dissolve by that id to total each feature once.',
   centroid: 'Each shape becomes a point at its centre (or on it, if the centre falls outside), keeping its properties.',
   combine: 'All the features of both layers in one layer, keeping their properties.',
 };
@@ -55,6 +66,7 @@ export const analysisTools = TOOLS.map((tool) => ({
     // layers from any other map.
     const first = tool.fields.find((field) => field.shapes);
     const { map_id } = await getLayer(params[first.key]);
-    return { layer: await newLayerSummary(await runTool(map_id, tool.id, params)) };
+    const { warnings, ...layer } = await runTool(map_id, tool.id, params);
+    return { layer: await newLayerSummary(layer), ...(warnings.length && { warnings }) };
   },
 }));

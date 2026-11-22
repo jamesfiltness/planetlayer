@@ -5,6 +5,7 @@ import ActionsMenu from './ActionsMenu.jsx';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 import FilterTab from './FilterTab.jsx';
 import { CloseIcon } from './icons.jsx';
+import PropertiesTab from './PropertiesTab.jsx';
 import StyleTab from './StyleTab.jsx';
 
 const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-ink-faint outline-none data-focus:text-ink data-selected:border-accent data-selected:font-semibold data-selected:text-ink';
@@ -12,20 +13,21 @@ const TAB = 'cursor-pointer border-b-2 border-transparent px-1 py-2 text-ink-fai
 /**
  * The floating editor for one layer, down the right side of the map. Its
  * header has the layer's name, a ⋯ menu for deleting the layer and a close
- * button; below are its Style and Filter tabs. The layer's properties are
- * read once here, for both tabs.
+ * button; below are its Style, Filter and Properties tabs. The layer's
+ * properties are read here, for all three, and again when they change.
  *
  * @param {object} props
- * @param {{ id: number, name: string, shape: string, count: number, matching: number | null, style: object, filter: object | null }} props.layer
+ * @param {{ id: number, name: string, shape: string, count: number, matching: number | null, style: object, filter: object | null, data_version: number }} props.layer
  * @param {(style: object) => void} props.onStyleChange called with the whole new style on every change
  * @param {(filter: object | null) => void} props.onFilterChange called with the whole new filter when it changes
  * @param {(filter: object, name: string) => Promise<boolean>} props.onSaveFiltered saves the matching features as a new layer
+ * @param {(name: string, expression: string) => Promise<object>} props.onCalculateProperty sets a property from an expression
  * @param {() => Promise<void>} props.onDelete deletes the layer; a rejection is shown in the confirmation
  * @param {() => void} props.onClose
  */
-export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSaveFiltered, onDelete, onClose }) {
+export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSaveFiltered, onCalculateProperty, onDelete, onClose }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const summaries = useFieldSummaries(layer.id);
+  const summaries = useFieldSummaries(layer.id, layer.data_version);
 
   return (
     <section
@@ -53,6 +55,7 @@ export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSa
         <TabList className="flex gap-4 border-b border-hairline px-3.5">
           <Tab className={TAB}>Style</Tab>
           <Tab className={TAB}>Filter</Tab>
+          <Tab className={TAB}>Properties</Tab>
         </TabList>
         <TabPanels className="overflow-auto p-3.5">
           <TabPanel className="outline-none">
@@ -61,6 +64,9 @@ export default function LayerEditor({ layer, onStyleChange, onFilterChange, onSa
           {/* Kept mounted while hidden, so unfinished conditions survive a look at Style. */}
           <TabPanel unmount={false} className="outline-none">
             <FilterTab key={layer.id} layer={layer} summaries={summaries} onChange={onFilterChange} onSaveAsLayer={onSaveFiltered} />
+          </TabPanel>
+          <TabPanel className="outline-none">
+            <PropertiesTab key={layer.id} summaries={summaries} onCalculate={onCalculateProperty} />
           </TabPanel>
         </TabPanels>
       </TabGroup>

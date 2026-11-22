@@ -39,19 +39,21 @@ export async function createLayer(db, mapId, name, shape) {
   const style = defaultStyle(shape, COLORS[id % COLORS.length]);
   const { rows } = await db.query(
     `INSERT INTO layers AS l (id, map_id, name, shape, fill_color, fill_opacity, outline_color, outline_width, opacity)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING l.id, l.map_id, l.name, l.shape, ${STYLE}`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING l.id, l.map_id, l.name, l.shape, l.visible, l.data_version, ${STYLE}`,
     [id, mapId, fitLayerName(name), shape, style.fillColor, style.fillOpacity, style.outlineColor, style.outlineWidth, style.opacity],
   );
   return rows[0];
 }
 
 /**
- * The map's layers, oldest first. Each has its `style`, its `filter` (or
- * null), its feature `count`, how many of those features the filter lets
- * through (`matching`; the same as `count` with no filter), the names of
- * the properties found on its first 100 features (`fields`), and the box
- * around all its features as `[west, south, east, north]` in degrees
- * (`extent`; null with no features). The extent ignores the filter.
+ * The map's layers, oldest first. Each has its `style`, whether it's drawn
+ * on the map (`visible`), its `filter` (or null), its feature `count`, how
+ * many of those features the filter lets through (`matching`; the same as
+ * `count` with no filter), the names of the properties found on its first
+ * 100 features (`fields`), and the box around all its features as
+ * `[west, south, east, north]` in degrees (`extent`; null with no
+ * features). The extent ignores the filter. `data_version` goes up each
+ * time its features are changed in place (see properties/).
  */
 export async function listLayers(mapId) {
   return layerRows('l.map_id = $1', [mapId]);
@@ -66,7 +68,7 @@ export async function getLayer(id) {
 
 async function layerRows(where, args) {
   const { rows } = await pool.query(
-    `SELECT l.id, l.map_id, l.name, l.shape, ${STYLE}, l.filter,
+    `SELECT l.id, l.map_id, l.name, l.shape, l.visible, l.data_version, ${STYLE}, l.filter,
             (SELECT count(*)::int FROM features WHERE layer_id = l.id) AS count,
             (SELECT CASE WHEN e IS NULL THEN NULL ELSE json_build_array(ST_XMin(e), ST_YMin(e), ST_XMax(e), ST_YMax(e)) END
              FROM (SELECT ST_Extent(geom) AS e FROM features WHERE layer_id = l.id) x) AS extent,
@@ -141,6 +143,17 @@ export async function layerGeoJson(id) {
     args,
   );
   return fc;
+}
+
+/**
+ * Records that the layer's features were changed in place, so browsers
+ * fetch them again (see `data_version` in listLayers), and marks the map as
+ * edited. Call inside the transaction that changed them.
+ */
+export async function touchLayerData(db, layerId) {
+  const { rows: [layer] } = await db.query('UPDATE layers SET data_version = data_version + 1 WHERE id = $1 RETURNING map_id', [layerId]);
+  if (!layer) throw notFound('That layer no longer exists.');
+  await touchMap(db, layer.map_id);
 }
 
 // Marks the map as just edited, and tells browsers showing it once the edit

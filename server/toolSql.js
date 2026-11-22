@@ -19,7 +19,9 @@
 // are, and the (layer_id, geom) index serves the spatial joins.
 import { SHAPES, UNITS } from '../shared/spec.js';
 import { badRequest } from './errors.js';
-import { summarizeSql } from './summarize.js';
+import { spatialJoinSql } from './spatialJoin.js';
+import { summarizeNearbySql, summarizeSql } from './summarize.js';
+import { MAX_METRES, mergeProps } from './toolParts.js';
 
 // ST_CollectionExtract type for each shape.
 const TYPE = Object.fromEntries(SHAPES.map((shape, i) => [shape, i + 1]));
@@ -29,8 +31,10 @@ export const SQL = {
     if (!Object.hasOwn(UNITS, unit)) throw badRequest(`Unknown unit: ${unit}`);
     // Strictly true or false: as text, "false" would be truthy and merge.
     if (typeof merge !== 'boolean') throw badRequest('Merge must be true or false.');
+    // Unlike the other tools' distances (parseMetres), a buffer's may be
+    // negative, to shrink areas.
     const metres = Number(distance) * UNITS[unit];
-    if (!metres || Math.abs(metres) > 100_000) throw badRequest('Distance must be non-zero and at most 100 km.');
+    if (!metres || Math.abs(metres) > MAX_METRES) throw badRequest(`Distance must be non-zero and at most ${MAX_METRES / 1000} km.`);
     if (metres < 0 && a.shape !== 'polygon') throw badRequest('Only area layers can take a negative distance.');
     const buffered = `ST_Buffer(a.geom::geography, ${bind(metres)})::geometry`;
     return {
@@ -43,11 +47,13 @@ export const SQL = {
     };
   },
 
+  // The feature's properties win where both have one; the area's is kept
+  // as `<name>_2` (see mergeProps).
   intersect({ layer: a, areas: b }) {
     return {
       name: `${a.name} inside ${b.name}`,
       shape: a.shape,
-      sql: `SELECT ST_CollectionExtract(ST_Intersection(a.geom, b.geom), ${TYPE[a.shape]}) AS geom, b.props || a.props AS props
+      sql: `SELECT ST_CollectionExtract(ST_Intersection(a.geom, b.geom), ${TYPE[a.shape]}) AS geom, ${mergeProps('a.props', 'b.props')} AS props
             FROM ${a.rows} a
             JOIN ${b.rows} b ON ST_Intersects(a.geom, b.geom)`,
     };
@@ -88,6 +94,10 @@ export const SQL = {
   },
 
   summarize: summarizeSql,
+
+  summarize_nearby: summarizeNearbySql,
+
+  spatial_join: spatialJoinSql,
 
   centroid({ layer: a }) {
     return {

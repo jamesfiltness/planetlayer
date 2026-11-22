@@ -18,8 +18,12 @@
 //   number to numbers, text to the property's text, true or false to booleans.
 // - Text operators ignore case.
 
-/** The property types the Filter tab tells apart. A field holding more than one type is `mixed`, and is filtered as text. */
-export const FIELD_TYPES = ['string', 'number', 'boolean', 'mixed'];
+/**
+ * The property types the Filter tab tells apart. A field holding more than
+ * one type is `mixed`, and is filtered as text. One holding only objects or
+ * only lists can only be checked for being empty.
+ */
+export const FIELD_TYPES = ['string', 'number', 'boolean', 'object', 'list', 'mixed'];
 
 /** How a feature must match a filter's conditions: every one of them, or at least one. */
 export const FILTER_MATCHES = ['all', 'any'];
@@ -74,8 +78,8 @@ export const FILTER_OPS = [
   { id: 'ends_with', label: 'ends with', types: TEXT, value: 'one', accepts: ['string'] },
   { id: 'in', label: 'is one of', types: [...TEXT, 'number'], value: 'many', accepts: ['string', 'number'] },
   { id: 'not_in', label: 'is not one of', types: [...TEXT, 'number'], value: 'many', accepts: ['string', 'number'] },
-  { id: 'empty', label: 'is empty', types: ANY_TYPE, value: 'none', accepts: [] },
-  { id: 'not_empty', label: 'is not empty', types: ANY_TYPE, value: 'none', accepts: [] },
+  { id: 'empty', label: 'is empty', types: FIELD_TYPES, value: 'none', accepts: [] },
+  { id: 'not_empty', label: 'is not empty', types: FIELD_TYPES, value: 'none', accepts: [] },
 ];
 
 const OPS = Object.fromEntries(FILTER_OPS.map((op) => [op.id, op]));
