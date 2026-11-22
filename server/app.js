@@ -5,6 +5,7 @@ import { notFound } from './errors.js';
 import { errorHandler } from './http/errorHandler.js';
 import { hostGuard, parseAllowedHosts } from './http/hostGuard.js';
 import { securityHeaders } from './http/securityHeaders.js';
+import { mcpRouter } from './mcp/route.js';
 import { layersRouter } from './routes/layers.js';
 import { mapsRouter } from './routes/maps.js';
 import { settingsRouter } from './routes/settings.js';
@@ -19,6 +20,8 @@ export function createApp({ clientDir = DEFAULT_CLIENT_DIR, allowedHosts = parse
   // and every response (refusals included) carries the security headers.
   app.use(securityHeaders);
   app.use(hostGuard(allowedHosts));
+  // Before the JSON parser below, as it parses bigger bodies itself.
+  app.use('/mcp', mcpRouter);
   app.use(express.json());
 
   app.use('/api/maps', mapsRouter);

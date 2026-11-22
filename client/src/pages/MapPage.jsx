@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router';
 import { api, NotFoundError } from '../api.js';
 import MapView from '../components/MapView.jsx';
+import { useMapChanges } from '../hooks/useMapChanges.js';
 import NotFound from './NotFound.jsx';
 
 export default function MapPage() {
@@ -10,6 +11,18 @@ export default function MapPage() {
   // undefined while loading; then the map, or { failed: true } if it couldn't be read.
   const [map, setMap] = useState();
   const [missing, setMissing] = useState(false);
+  // How many times the map has changed on the server since it opened, such
+  // as an assistant adding a layer or renaming it. Each change reloads the
+  // map's name here and its layers in the map view.
+  const [changes, setChanges] = useState(0);
+
+  useMapChanges(mapId, () => {
+    setChanges((n) => n + 1);
+    api.map(mapId).then(
+      (loaded) => setMap((shown) => (shown ? { ...shown, name: loaded.name } : shown)),
+      (error) => error instanceof NotFoundError && setMissing(true),
+    );
+  });
 
   useEffect(() => {
     let current = true;
@@ -42,5 +55,5 @@ export default function MapPage() {
   // Wait for the map, so MapLibre starts at its saved view instead of jumping there.
   if (!map) return <div className="h-full bg-page" />;
   // Keyed on the id, so opening another map starts from a fresh map and layer list.
-  return <MapView key={mapId} mapId={mapId} initialView={map.view} />;
+  return <MapView key={mapId} mapId={mapId} initialView={map.view} changes={changes} />;
 }

@@ -6,6 +6,7 @@ import { transaction } from './db.js';
 import { badRequest } from './errors.js';
 import { filterSql } from './filter/sql.js';
 import { createLayer } from './layers.js';
+import { checkNumbers } from './toolChecks.js';
 import { SQL } from './toolSql.js';
 import { parseId, parseLayerName } from './validation.js';
 
@@ -16,9 +17,15 @@ import { parseId, parseLayerName } from './validation.js';
  * so a tool works on what the map shows. The result is named after them,
  * with "(filtered)" for a filtered layer, unless `params.name` is given.
  *
+ * A property to add up (a field marked `numbers`) is checked first (see
+ * checkNumbers): one with no numbers at all is refused, and one with some
+ * text gives a warning.
+ *
  * @param {number} mapId
  * @param {string} id one of TOOLS in shared/spec.js
  * @param {Record<string, unknown>} params the tool's fields, by key, and an optional `name`
+ * @returns {Promise<object>} the new layer, with `warnings`: things to tell
+ *   the person about the result (usually none)
  */
 export async function runTool(mapId, id, params = {}) {
   const tool = TOOLS.find((t) => t.id === id);
@@ -37,6 +44,12 @@ export async function runTool(mapId, id, params = {}) {
       const shapes = field.shapes ?? (field.sameShapeAs && [picked[field.sameShapeAs].shape]);
       if (shapes) picked[field.key] = withRows(await loadLayer(db, mapId, params[field.key], field.label, shapes), args);
     }
+    const warnings = [];
+    for (const field of tool.fields) {
+      if (!field.numbers || !params[field.key] || typeof params[field.key] !== 'string') continue;
+      const warning = await checkNumbers(db, picked[field.fieldOf], params[field.key]);
+      if (warning) warnings.push(warning);
+    }
     const { name, shape, sql } = SQL[id](picked, params, bind);
     const layer = await createLayer(db, mapId, custom || name, shape);
 
@@ -50,7 +63,7 @@ export async function runTool(mapId, id, params = {}) {
       const filtered = Object.values(picked).some((l) => l.filter);
       throw badRequest(`That produced no features.${filtered ? ' Check the filters on the layers you picked.' : ''}`);
     }
-    return layer;
+    return { ...layer, warnings };
   });
 }
 

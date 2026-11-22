@@ -7,7 +7,7 @@ import { parseId, parseMapName } from './validation.js';
 
 // Everything about a layer except its id and map. A column added to `layers`
 // must be added here too, or copies will lose it (and get its default).
-const LAYER_COLUMNS = `name, shape, fill_color, fill_opacity, outline_color, outline_width, opacity, filter, symbology`;
+const LAYER_COLUMNS = `name, shape, fill_color, fill_opacity, outline_color, outline_width, opacity, filter, symbology, visible`;
 
 /**
  * Copies the map `id` to a new map called `name`, with the same saved view

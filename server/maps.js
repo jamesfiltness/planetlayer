@@ -1,6 +1,7 @@
 // An id that can't be valid is treated like a missing one (404).
 import { pool } from './db.js';
 import { notFound } from './errors.js';
+import { announceMapChanged } from './mapEvents.js';
 import { parseId, parseMapName, parseView } from './validation.js';
 
 // `view` is null until the map has been moved (the columns are all set or all null).
@@ -33,6 +34,7 @@ export async function renameMap(id, name) {
     [parseId(id), parseMapName(name)],
   );
   if (!rowCount) throw mapNotFound();
+  announceMapChanged(parseId(id));
   return getMap(id);
 }
 
@@ -48,9 +50,11 @@ export async function saveMapView(id, view) {
   if (!rowCount) throw mapNotFound();
 }
 
+// Browsers showing the map are told, so they can say it's gone.
 export async function deleteMap(id) {
   const { rowCount } = await pool.query('DELETE FROM maps WHERE id = $1', [parseId(id)]);
   if (!rowCount) throw mapNotFound();
+  announceMapChanged(parseId(id));
 }
 
 const mapNotFound = () => notFound("That map doesn't exist. It may have been deleted.");

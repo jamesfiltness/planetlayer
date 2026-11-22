@@ -34,11 +34,13 @@ export default function ConditionRow({ condition, fields, showProblem, onChange,
   if (!ops.some((op) => op.id === condition.op)) ops.unshift(filterOp(condition.op));
   const problem = showProblem ? conditionProblem(condition) : null;
 
-  // A new property keeps the operator if it still suits, else falls back to "is".
+  // A new property keeps the operator if it still suits, else falls back to
+  // the first that suits its type: "is", or "is empty" for objects and lists.
   const setField = (name) => {
     const type = fields.find((f) => f.name === name)?.type ?? 'string';
-    const keep = opsForType(type).some((op) => op.id === condition.op) && type === field?.type;
-    const op = keep ? condition.op : 'eq';
+    const suited = opsForType(type);
+    const keep = suited.some((op) => op.id === condition.op) && type === field?.type;
+    const op = keep ? condition.op : suited[0].id;
     onChange({ ...condition, field: name, op, value: keep ? condition.value : BLANK[filterOp(op).value] });
   };
 

@@ -123,6 +123,24 @@ describe('HTTP', () => {
     assert.equal((await fetch(`${base}/api/layers/${layer.id}/filtered`, json('POST', { filter: null }))).status, 400);
   });
 
+  test("a layer's visibility and properties have routes", async () => {
+    const map = await (await fetch(`${base}/api/maps`, json('POST', { name: 'Properties' }))).json();
+    const { createLayer } = await import('../layers.js');
+    const layer = await createLayer(db.pool, map.id, 'places', 'point');
+    await db.pool.query(`INSERT INTO features (layer_id, geom, props) VALUES ($1, ST_Point(0, 0, 4326), '{"pop": "12"}')`, [layer.id]);
+    const layers = async () => (await fetch(`${base}/api/maps/${map.id}/layers`)).json();
+
+    assert.equal((await fetch(`${base}/api/layers/${layer.id}/visible`, json('PUT', { visible: false }))).status, 204);
+    assert.equal((await layers())[0].visible, false);
+    assert.equal((await fetch(`${base}/api/layers/${layer.id}/visible`, json('PUT', {}))).status, 400);
+
+    const calculated = await fetch(`${base}/api/layers/${layer.id}/properties/calculate`, json('POST', { name: 'double', expression: 'number(pop) * 2' }));
+    assert.deepEqual(await calculated.json(), { name: 'double', numbers: 1, empty: 0 });
+    const bad = await fetch(`${base}/api/layers/${layer.id}/properties/calculate`, json('POST', { name: 'x', expression: '(' }));
+    assert.equal(bad.status, 400);
+    assert.match((await bad.json()).error, /ends too soon/);
+  });
+
   test('unknown API paths are JSON 404s, not the client page', async () => {
     const res = await fetch(`${base}/api/nope`);
     assert.equal(res.status, 404);

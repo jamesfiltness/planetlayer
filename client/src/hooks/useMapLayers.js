@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
+import { mergeLayers } from './mergeLayers.js';
 import { useDebouncedSaver } from './useDebouncedSaver.js';
+import { useLayerVisibility } from './useLayerVisibility.js';
 
 /**
  * A map's layers as the server lists them (see listLayers in
@@ -11,37 +13,20 @@ import { useDebouncedSaver } from './useDebouncedSaver.js';
  * Its `matching` is null from when its filter changes until that save is
  * done (and stays null if the save fails).
  *
+ * The list is loaded again whenever `changes` goes up, which MapPage does
+ * when the map changes on the server (see useMapChanges), such as when an
+ * assistant adds a layer. mergeLayers decides what of the list on screen
+ * to keep.
+ *
  * @param {number | string} mapId
  * @param {{ attempt: Function, fail: Function }} status from useStatus
+ * @param {number} [changes] how many times the map has changed on the server
  */
-export function useMapLayers(mapId, { attempt, fail }) {
+export function useMapLayers(mapId, { attempt, fail }, changes = 0) {
   const [layers, setLayers] = useState([]);
-  const update = (id, change) => setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, ...change } : layer)));
-
-  // A reload keeps each layer's revision, so the map doesn't fetch features
-  // that haven't changed.
-  const refresh = useCallback(() => api.layers(mapId).then((loaded) =>
-    setLayers((current) => loaded.map((layer) => ({ ...layer, revision: current.find((c) => c.id === layer.id)?.revision ?? 0 })))), [mapId]);
-
-  useEffect(() => {
-    refresh().catch((error) => fail(`Couldn't load layers: ${error.message}`));
-  }, [refresh, fail]);
-
-  // One import at a time. The list is refreshed even when a file fails,
-  // because the files before it were saved.
-  const importing = useRef(false);
-  const importFiles = async (files) => {
-    if (importing.current || !files.length) return;
-    importing.current = true;
-    await attempt('Importing…', async () => {
-      try {
-        for (const file of files) await api.importFile(mapId, file);
-      } finally {
-        await refresh().catch(() => {});
-      }
-    });
-    importing.current = false;
-  };
+  const update = useCallback(
+    (id, change) => setLayers((current) => current.map((layer) => (layer.id === id ? { ...layer, ...change } : layer))), []);
+  const { setLayerVisibility, visibilitySaving } = useLayerVisibility(update, fail);
 
   // Restyles the layer on the map straight away; the save follows shortly.
   const styleSaver = useDebouncedSaver(useCallback((id, style, options) =>
@@ -72,6 +57,38 @@ export function useMapLayers(mapId, { attempt, fail }) {
     filterSaver.save(id, filter);
   };
 
+  // Loads can overlap (an import's own reload, then the change it caused),
+  // and finish in any order, so only the latest one's list is used: an
+  // older one could put back a layer just deleted.
+  const latestLoad = useRef(0);
+  const { pending: styleSaving } = styleSaver;
+  const { pending: filterSaving } = filterSaver;
+  const refresh = useCallback(async () => {
+    const load = ++latestLoad.current;
+    const loaded = await api.layers(mapId);
+    if (load === latestLoad.current) setLayers((current) => mergeLayers(loaded, current, { styleSaving, filterSaving, visibilitySaving }));
+  }, [mapId, styleSaving, filterSaving, visibilitySaving]);
+
+  useEffect(() => {
+    refresh().catch((error) => fail(`Couldn't load layers: ${error.message}`));
+  }, [refresh, fail, changes]);
+
+  // One import at a time. The list is refreshed even when a file fails,
+  // because the files before it were saved.
+  const importing = useRef(false);
+  const importFiles = async (files) => {
+    if (importing.current || !files.length) return;
+    importing.current = true;
+    await attempt('Importing…', async () => {
+      try {
+        for (const file of files) await api.importFile(mapId, file);
+      } finally {
+        await refresh().catch(() => {});
+      }
+    });
+    importing.current = false;
+  };
+
   // Resolves to whether it worked, so the form knows whether to clear itself.
   const saveFilteredAsLayer = (id, filter, name) =>
     attempt('Saving…', async () => {
@@ -88,12 +105,25 @@ export function useMapLayers(mapId, { attempt, fail }) {
     await refresh().catch((error) => fail(`Deleted, but couldn't reload the layers: ${error.message}`));
   };
 
-  // Resolves to whether the tool succeeded, so its form knows whether to close.
+  // Resolves to whether the tool succeeded, so its form knows whether to
+  // close. Warnings about the result stay in the status banner.
   const runTool = (tool, params) =>
     attempt('Running…', async () => {
-      await api.runTool(mapId, tool, params);
+      const { warnings = [] } = await api.runTool(mapId, tool, params);
       await refresh();
+      return warnings.join(' ');
     });
 
-  return { layers, importFiles, setLayerStyle, setLayerFilter, saveFilteredAsLayer, deleteLayer, runTool };
+  // Sets a property in place (see the Properties tab). Resolves to the
+  // server's answer, or throws so the tab can show why.
+  const calculateProperty = async (id, name, expression) => {
+    const result = await api.calculateProperty(id, name, expression);
+    await refresh().catch(() => {});
+    return result;
+  };
+
+  return {
+    layers, importFiles, setLayerStyle, setLayerFilter, setLayerVisibility, saveFilteredAsLayer, deleteLayer, runTool,
+    calculateProperty,
+  };
 }

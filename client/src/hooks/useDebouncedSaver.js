@@ -19,9 +19,11 @@ const SAVE_DELAY_MS = 300;
  *
  * @param {(id: number, value: unknown, options: { keepalive: boolean }) => Promise<unknown>} send
  *   sends one save and reports its own failures; keep it stable with useCallback
- * @returns {{ save: (id: number, value: unknown) => void, cancel: (id: number) => void }}
+ * @returns {{ save: (id: number, value: unknown) => void, cancel: (id: number) => void, pending: (id: number) => boolean }}
  *   `save` queues a layer's latest value; `cancel` drops a layer's queued
- *   save, for when the layer is being deleted.
+ *   save, for when the layer is being deleted; `pending` says whether a
+ *   layer has a save waiting or under way, so the server's copy of its
+ *   value may be older than the one on screen.
  */
 export function useDebouncedSaver(send) {
   const waiting = useRef(new Map()); // layer id → { value, timer }
@@ -53,6 +55,8 @@ export function useDebouncedSaver(send) {
     waiting.current.set(id, { value, timer: setTimeout(() => sendNow(id), SAVE_DELAY_MS) });
   }, [cancel, sendNow]);
 
+  const pending = useCallback((id) => waiting.current.has(id) || sending.current.has(id), []);
+
   useEffect(() => {
     const flush = () => [...waiting.current.keys()].forEach((id) => sendNow(id, true));
     window.addEventListener('pagehide', flush);
@@ -62,5 +66,5 @@ export function useDebouncedSaver(send) {
     };
   }, [sendNow]);
 
-  return { save, cancel };
+  return { save, cancel, pending };
 }

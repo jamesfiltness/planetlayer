@@ -187,4 +187,14 @@ describe('property summaries', () => {
     assert.equal(fields.pop.max, 250);
     await assert.rejects(fieldSummaries(999999), status(404));
   });
+
+  test('a property holding only objects, or only lists, says so', async () => {
+    const { createLayer } = await import('../layers.js');
+    const nested = await createLayer(db.pool, map.id, 'nested', 'point');
+    for (const props of [{ tags: ['a'], meta: { n: 1 }, odd: { n: 1 } }, { tags: [], meta: { n: 2 }, odd: 'x' }]) {
+      await db.pool.query('INSERT INTO features (layer_id, geom, props) VALUES ($1, ST_MakePoint(0, 0), $2)', [nested.id, props]);
+    }
+    const types = Object.fromEntries((await fieldSummaries(nested.id)).map((f) => [f.name, f.type]));
+    assert.deepEqual(types, { meta: 'object', odd: 'mixed', tags: 'list' });
+  });
 });

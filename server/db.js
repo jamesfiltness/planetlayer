@@ -36,17 +36,24 @@ export async function migrate() {
  * rather than returned to the pool, and the original error (the one that
  * explains what happened) is the one rethrown.
  *
+ * Work registered with afterCommit runs once the commit is done, and not at
+ * all if the transaction is rolled back.
+ *
  * @template T
  * @param {(db: pg.PoolClient) => Promise<T>} fn
  * @returns {Promise<T>}
  */
 export async function transaction(fn) {
   const client = await pool.connect();
+  const committed = [];
+  client[AFTER_COMMIT] = committed;
   let broken;
   try {
     await client.query('BEGIN');
     const result = await fn(client);
     await client.query('COMMIT');
+    delete client[AFTER_COMMIT];
+    for (const callback of committed) callback();
     return result;
   } catch (error) {
     try {
@@ -56,7 +63,26 @@ export async function transaction(fn) {
     }
     throw error;
   } finally {
+    // The connection goes back to the pool for other work, so it mustn't
+    // keep this transaction's callbacks.
+    delete client[AFTER_COMMIT];
     // Passing an error makes the pool close this connection instead of reusing it.
     client.release(broken);
   }
+}
+
+// Where transaction() keeps a connection's after-commit callbacks.
+const AFTER_COMMIT = Symbol('afterCommit');
+
+/**
+ * Runs `callback` once the work done through `db` is saved: after the
+ * commit if `db` is a transaction's connection (and never if it's rolled
+ * back), or straight away if it's the pool, whose queries save as they run.
+ *
+ * @param {pg.Pool | pg.PoolClient} db
+ * @param {() => void} callback must not throw
+ */
+export function afterCommit(db, callback) {
+  if (db[AFTER_COMMIT]) db[AFTER_COMMIT].push(callback);
+  else callback();
 }

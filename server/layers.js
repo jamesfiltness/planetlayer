@@ -1,8 +1,9 @@
-import { pool } from './db.js';
-import { notFound } from './errors.js';
+import { afterCommit, pool } from './db.js';
+import { badRequest, notFound } from './errors.js';
 import { filterSql } from './filter/sql.js';
+import { announceMapChanged } from './mapEvents.js';
 import { parseSymbology } from './symbology.js';
-import { fitLayerName, parseId, parseStyle } from './validation.js';
+import { fitLayerName, parseId, parseLayerName, parseStyle } from './validation.js';
 
 // New layers take a colour from this list by their id, so a layer's colour is
 // stable and layers created one after another differ.
@@ -38,30 +39,43 @@ export async function createLayer(db, mapId, name, shape) {
   const style = defaultStyle(shape, COLORS[id % COLORS.length]);
   const { rows } = await db.query(
     `INSERT INTO layers AS l (id, map_id, name, shape, fill_color, fill_opacity, outline_color, outline_width, opacity)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING l.id, l.map_id, l.name, l.shape, ${STYLE}`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING l.id, l.map_id, l.name, l.shape, l.visible, l.data_version, ${STYLE}`,
     [id, mapId, fitLayerName(name), shape, style.fillColor, style.fillOpacity, style.outlineColor, style.outlineWidth, style.opacity],
   );
   return rows[0];
 }
 
 /**
- * The map's layers, oldest first. Each has its `style`, its `filter` (or
- * null), its feature `count`, how many of those features the filter lets
- * through (`matching`; the same as `count` with no filter), the names of
- * the properties found on its first 100 features (`fields`), and the box
- * around all its features as `[west, south, east, north]` in degrees
- * (`extent`; null with no features). The extent ignores the filter.
+ * The map's layers, oldest first. Each has its `style`, whether it's drawn
+ * on the map (`visible`), its `filter` (or null), its feature `count`, how
+ * many of those features the filter lets through (`matching`; the same as
+ * `count` with no filter), the names of the properties found on its first
+ * 100 features (`fields`), and the box around all its features as
+ * `[west, south, east, north]` in degrees (`extent`; null with no
+ * features). The extent ignores the filter. `data_version` goes up each
+ * time its features are changed in place (see properties/).
  */
 export async function listLayers(mapId) {
+  return layerRows('l.map_id = $1', [mapId]);
+}
+
+/** One layer, described as in listLayers. Throws a 404 if it doesn't exist. */
+export async function getLayer(id) {
+  const [layer] = await layerRows('l.id = $1', [parseId(id)]);
+  if (!layer) throw notFound('That layer no longer exists.');
+  return layer;
+}
+
+async function layerRows(where, args) {
   const { rows } = await pool.query(
-    `SELECT l.id, l.map_id, l.name, l.shape, ${STYLE}, l.filter,
+    `SELECT l.id, l.map_id, l.name, l.shape, l.visible, l.data_version, ${STYLE}, l.filter,
             (SELECT count(*)::int FROM features WHERE layer_id = l.id) AS count,
             (SELECT CASE WHEN e IS NULL THEN NULL ELSE json_build_array(ST_XMin(e), ST_YMin(e), ST_XMax(e), ST_YMax(e)) END
              FROM (SELECT ST_Extent(geom) AS e FROM features WHERE layer_id = l.id) x) AS extent,
             (SELECT coalesce(array_agg(DISTINCT k), '{}') FROM (SELECT props FROM features WHERE layer_id = l.id LIMIT 100) s,
                     jsonb_object_keys(s.props) k) AS fields
-     FROM layers l WHERE l.map_id = $1 ORDER BY l.id`,
-    [mapId],
+     FROM layers l WHERE ${where} ORDER BY l.id`,
+    args,
   );
   await Promise.all(rows.map(async (layer) => {
     layer.matching = layer.filter ? await countMatching(pool, layer.id, layer.filter) : layer.count;
@@ -97,6 +111,16 @@ export async function saveLayerStyle(id, value) {
   await touchMap(pool, saved.map_id);
 }
 
+/** Renames a layer. Unlike a new layer's name, this one is required. */
+export async function renameLayer(id, value) {
+  const name = parseLayerName(value);
+  if (!name) throw badRequest('Give the layer a name.');
+  const { rows: [renamed] } = await pool.query('UPDATE layers SET name = $2 WHERE id = $1 RETURNING map_id', [parseId(id), name]);
+  if (!renamed) throw notFound('That layer no longer exists.');
+  await touchMap(pool, renamed.map_id);
+  return getLayer(id);
+}
+
 export async function deleteLayer(id) {
   const { rows: [deleted] } = await pool.query('DELETE FROM layers WHERE id = $1 RETURNING map_id', [parseId(id)]);
   if (!deleted) throw notFound('That layer no longer exists.');
@@ -121,8 +145,22 @@ export async function layerGeoJson(id) {
   return fc;
 }
 
-// Marks the map as just edited. Throws if it no longer exists.
+/**
+ * Records that the layer's features were changed in place, so browsers
+ * fetch them again (see `data_version` in listLayers), and marks the map as
+ * edited. Call inside the transaction that changed them.
+ */
+export async function touchLayerData(db, layerId) {
+  const { rows: [layer] } = await db.query('UPDATE layers SET data_version = data_version + 1 WHERE id = $1 RETURNING map_id', [layerId]);
+  if (!layer) throw notFound('That layer no longer exists.');
+  await touchMap(db, layer.map_id);
+}
+
+// Marks the map as just edited, and tells browsers showing it once the edit
+// is saved (see mapEvents.js). Every change to a map's layers calls this.
+// Throws if the map no longer exists.
 export async function touchMap(db, mapId) {
   const { rowCount } = await db.query('UPDATE maps SET updated_at = now() WHERE id = $1', [mapId]);
   if (!rowCount) throw notFound('That map no longer exists.');
+  afterCommit(db, () => announceMapChanged(mapId));
 }

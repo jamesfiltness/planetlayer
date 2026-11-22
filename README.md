@@ -1,6 +1,6 @@
 # Spatial Analysis
 
-A self-hosted app for spatial analysis: as many maps as you like, each with an OpenStreetMap base map, your own layers stored in PostGIS, and seven analysis tools.
+A self-hosted app for spatial analysis: as many maps as you like, each with an OpenStreetMap base map, your own layers stored in PostGIS, and nine analysis tools.
 
 ## Run it
 
@@ -28,57 +28,100 @@ The app only answers to `localhost`, IP addresses and `.local` names, so other w
 
 ## What it does
 
-- **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename or delete one from its **⋯** menu. Deleting a map deletes its layers. Each map opens where you last left it, on any device.
-- **Add layer:** click the **+** at the top of the Layers panel to upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers. A property whose values are all numbers written as text (such as `"pop_est": "23.5"`) is stored as numbers, so it can be filtered, styled and added up as numbers; empty text in it becomes empty. Text with a leading zero (`"007"`), a whole number of more than 15 digits, or any word, keeps the whole property as text, since it's probably a code or an ID. Layers imported before this was added keep their text: import the file again to convert them.
-- **Layers:** the panel on the left lists the map's layers, each with a small picture: its shape (points, line or area) in the layer's colour, or a glimpse of its style (category colours, colour ramp or heatmap); hover over it for the style and property. Click the eye to hide or show a layer on the map. Hover over a layer and click the pencil to open it in the layer editor on the right, where the **Style** tab sets how the layer is drawn: a style type at the top, then its fill colour and opacity, outline colour and width, and overall opacity (changes show on the map as you make them, and are saved). The style types are **Single colour** (every feature alike), **Categories** (a colour for each of a property's 24 most common values, in a fixed palette, with grey for any other value and for none) and **Colour scale** (a smooth gradient along a choice of colour ramps, from a numeric property's lowest value to its highest) and, for points only, **Size** (circles sized by a numeric property, with their area in step with the value), **Heatmap** (points blurred into a heatmap, optionally weighted by a numeric property; zoomed out, its intensity is lowered to match how crowded the points get, so it doesn't turn solid red) and **Cluster** (nearby points grouped into one circle with their count; click a cluster to zoom in and split it). After choosing a type, pick the property it colours by; only properties that suit the type are offered. The editor's **⋯** menu deletes the layer.
+- **Maps:** the app opens on your list of maps, most recently edited first. Create one with **New map**; rename, duplicate or delete one from its **⋯** menu. Duplicating copies the map's view and every layer (features, style and filter) into a new, independent map. Deleting a map deletes its layers. Each map opens where you last left it, on any device, and shows changes made elsewhere (another tab, another device or an assistant) as they happen.
+- **Add layer:** click the **+** at the top of the Layers panel to upload GeoJSON, zipped Shapefile, KML, KMZ, GPX, GeoPackage, FlatGeobuf or TopoJSON (or drop the file on the map). Files are read with GDAL and reprojected to WGS84. A file with several layers, or mixed points, lines and areas, becomes several layers. A property whose values are all numbers written as text (such as `"pop_est": "23.5"`) is stored as numbers, so it can be filtered, styled and added up as numbers; empty text in it becomes empty, and so do the usual ways of writing "no value": `n/a`, `na`, `null`, `none` and `-`. Text with a leading zero (`"007"`), a whole number of more than 15 digits, or any word, keeps the whole property as text, since it's probably a code or an ID. Layers imported before this were converted the same way when the app was updated (`migrations/012_number_text.sql`). For anything else, recalculate the property as `number(<property>)` in the **Properties** tab.
+- **Layers:** the panel on the left lists the map's layers, each with a small picture: its shape (points, line or area) in the layer's colour, or a glimpse of its style (category colours, colour ramp or heatmap); hover over it for the style and property. Click the eye to hide or show a layer on the map; it's saved with the layer, so it stays hidden when the map is opened again. Hover over a layer and click the pencil to open it in the layer editor on the right, where the **Style** tab sets how the layer is drawn: a style type at the top, then its fill colour and opacity, outline colour and width, and overall opacity (changes show on the map as you make them, and are saved). The style types are **Single colour** (every feature alike), **Categories** (a colour for each of a property's 24 most common values, in a fixed palette, with grey for any other value and for none) and **Colour scale** (a smooth gradient along a choice of colour ramps, from a numeric property's lowest value to its highest) and, for points only, **Size** (circles sized by a numeric property, with their area in step with the value), **Heatmap** (points blurred into a heatmap, optionally weighted by a numeric property; zoomed out, its intensity is lowered to match how crowded the points get, so it doesn't turn solid red) and **Cluster** (nearby points grouped into one circle with their count; click a cluster to zoom in and split it). After choosing a type, pick the property it colours by; only properties that suit the type are offered. The editor's **⋯** menu deletes the layer.
 - **Filter:** the layer editor's **Filter** tab shows only the features whose properties match conditions, such as `functional` *is one of* `not working`, or `install_year` *is at least* 2015. Each comparison suits the property's type (numbers, text or true/false), common values are suggested from the data, and several conditions can be matched all together or any one of them. Text comparisons ignore case. The filter is saved with the layer, and a funnel in the Layers panel marks a filtered layer with how many features it shows. **Save as new layer** copies the matching features into a layer of their own. The analysis tools use only the features a layer's filter lets through, so they work on what the map shows; a filtered layer is marked "(filtered)" in the tool's layer list and in the name of the layer it makes.
+- **Properties:** the layer editor's **Properties** tab lists each property of the layer's features with its type (number, text, true/false, object, list or mixed) and a sample value. **Recalculate** sets a property on every feature from an expression, like a GIS field calculator, and **Add a property** makes a new one the same way: `pop_est / building_count`, or `round("area sq km" * 100, 1)`. An expression takes numbers, property names (in double quotes if they have spaces or other characters), `+ - * /`, brackets, and `round(x)` or `round(x, digits)`, `abs`, `min`, `max` and `number(property)`. Only properties stored as numbers are used, except by `number()`, which also reads numbers written as text (`"23.5"`, `"007"`), so recalculating a text property as `number(pop_est)` turns it into numbers; for a text property the editor offers this as a shortcut. A missing value, text, or dividing by zero leaves that feature's result empty. Objects and lists can't be recalculated. Changes apply to the whole layer, whatever its filter.
 - **Analyse:** each tool reads layers from the open map and writes a new layer to it.
 
 | Tool | What it does |
 | --- | --- |
 | Buffer | Area around each feature (optionally merged) |
-| Intersect | The part of a layer inside an area layer |
+| Intersect | The part of a layer inside an area layer, with the properties of both. Where both have a property of the same name, the area's is kept as `<name>_2` |
 | Subtract | The part of a layer outside an area layer |
 | Dissolve | Merge lines or areas sharing a property value |
-| Summarize within | For each area, how many features of another layer are in it (`count`) and, optionally, the sum, mean, minimum or maximum of one of their numeric properties (such as `pop_est_sum`). A point on a shared border counts for both areas; a line or area counts once, in the area holding its centre. Only values stored as numbers are added up |
+| Summarize within | For each area, how many features of another layer are in it (`count`) and, optionally, the sum, mean, minimum or maximum of one of their numeric properties (such as `pop_est_sum`). A point on a shared border counts for both areas; a line or area counts once, in the area holding its centre. Only values stored as numbers are added up: a property stored only as text is refused, and one with some text gives a warning saying how many values were left out |
+| Summarize nearby | For each feature, of any shape, how many features of another layer are within a distance of it on the ground (`count`), and optionally the sum, mean, minimum or maximum of one of their numeric properties, such as the people living within 2 km of each water pump. The features keep their own shape. A line or area counts by its centre, and a feature within reach of two others counts for both. With the same layer picked twice, a feature doesn't count itself |
+| Spatial join | Gives each feature the properties of the nearest feature of another layer within a search distance (measured between the shapes on the ground; 0 means touching), and `join_distance_<unit>`, how far away it was. A property both have comes from the joined layer as `<name>_2`. Features with nothing in reach are kept, with nothing added |
 | Centroid | A point at the centre of each shape |
 | Combine | Two layers of the same shape as one |
 
 Click a feature to see its properties.
+
+## Use it from Claude (MCP)
+
+The app is also an [MCP](https://modelcontextprotocol.io) server, so an AI assistant such as Claude Code can create maps, load files, run the analysis tools and explain the results. Start the app with `npm start`, then connect Claude Code to it:
+
+```sh
+claude mcp add --transport http spatial-analysis http://localhost:8080/mcp
+```
+
+Then ask in plain words, from the folder your data is in: *"Make a map called Uganda water from the three GeoJSON files here, then find the broken water pumps that would help the most people."* Layers Claude makes appear on the map in your browser as it works.
+
+- **The app must be running.** The server is part of the app, at `/mcp` on the app's own address and port. While the app is down, Claude can't use its tools.
+- **Files go straight to the app.** The app runs in Docker and can't see your folders, so Claude asks the `upload_file` tool for a `curl` command and runs it on your computer. The file goes from your disk to the app's import, as if you'd dropped it on the map, and never passes through the model. This needs an assistant that can run commands on your computer: Claude Code in the terminal or the desktop app, in a session running on your machine. Claude Code on the web, or a cloud session, can't reach `localhost`. Assistants that can't run commands can still send small data inline with `add_features`.
+- **Claude sees summaries, not your whole dataset.** The tools work on layers inside the app and return ids, counts and property summaries. Claude reads features only when it asks to, a page of up to 100 at a time, without coordinates unless needed. Results over 40,000 characters are refused with a hint to ask for less.
+- **Guidance comes with it.** The server tells Claude how analysis is done here (look at a property's real values first, name new layers, state assumptions). It's in `server/assistant/instructions.md`.
+
+| Tools | |
+| --- | --- |
+| Maps | `list_maps`, `get_map` (with its layers), `create_map`, `rename_map`, `duplicate_map` |
+| Layers | `rename_layer`, `set_layer_visibility`, `delete_layer` |
+| Reading data | `describe_layer` (every property's type, range and common values), `get_features` (a sorted page of features) |
+| Data in | `upload_file` (a command that uploads a file), `add_features` (inline GeoJSON) |
+| Properties | `calculate_property` (set a property from an expression; `number(<property>)` turns numbers written as text into numbers) |
+| Filters | `set_layer_filter`, `save_filtered_layer` |
+| Style | `style_layer` (style type and colours; categories and ranges are worked out from the data; gives back every setting as saved) |
+| Analysis | `buffer`, `intersect`, `subtract`, `dissolve`, `summarize`, `summarize_nearby`, `spatial_join`, `centroid`, `combine`, made from `shared/spec.js`. A result can come with `warnings`, such as values left out of a total because they're text |
+
+`/mcp` follows the same host and cross-site rules as the rest of the app, so other websites can't use it.
 
 ## Layout
 
 ```
 shared/spec.js          file formats, units and tool fields, used by both server and client
 shared/filter.js        layer filters: their operators and what makes a condition valid
-shared/limits.js        limits on map and layer names and on layer styles
+shared/limits.js        limits on map, layer and property names and on layer styles
+shared/expression.js    the expression language of Calculate property, parsed the same way by the client and the server
 shared/symbology.js     layer symbology: the style types, which layer shapes and properties each can use, and their settings
 shared/colors.js        the category palette and colour ramps symbology draws with
+shared/buildSymbology.js  a style type's settings worked out from a property's values (the Style tab and style_layer)
 
 server/index.js         startup: migrate the database, then listen
 server/app.js           the Express app: middleware order, routers, client files, errors
 server/http/            request guard (host names, cross-site writes), security headers, upload settings, errors
 server/routes/          thin route handlers for /api/maps and /api/layers
 server/maps.js          maps: list, create, rename, delete, save the view
-server/layers.js        layers: create, list, restyle, delete, GeoJSON
+server/duplicateMap.js  copying a map, its layers and their features into a new map
+server/layers.js        layers: create, list, rename, restyle, delete, GeoJSON
+server/layerVisibility.js  showing and hiding a layer, saved with it
+server/mapEvents.js     telling open browsers a map has changed, so they show changes made elsewhere
 server/symbology.js     checking a layer's symbology against its shape
 server/import.js        importing a file into a map, all or nothing
-server/importNumbers.js storing numbers written as text as numbers, on import
+server/importNumbers.js storing numbers written as text as numbers, on import (the rule itself is number_text() in migrations/012)
 server/gdal.js          reading uploaded files with GDAL's command-line tools
 server/layerFilter.js   saving a layer's filter, and saving its matching features as a new layer
 server/filter/          filters: checking them, turning them into SQL, summarising a layer's properties
 server/tools.js         running an analysis tool on the features each picked layer's filter lets through
 server/toolSql.js       each analysis tool's SQL, in PostGIS
-server/summarize.js     the Summarize within tool's SQL
+server/toolParts.js     SQL pieces the tools share: distances on the ground, feature centres, merging properties
+server/toolChecks.js    checks before a tool runs, such as a property to add up being stored as text
+server/summarize.js     the Summarize within and Summarize nearby tools' SQL
+server/spatialJoin.js   the Spatial join tool's SQL
+server/properties/      calculating a property from an expression
+server/features.js      reading a layer's features a page at a time
+server/assistant/       the tools AI assistants use: registry.js lists them, tools/ holds them by area, instructions.md the guide sent with them
+server/mcp/             the MCP server built from those tools, and its /mcp route
 server/migrations/      schema, applied in order when the server starts
 server/test/            integration tests against PostGIS and GDAL
 
 client/src/main.jsx     routes: / (list of maps), /maps/:mapId (one map)
 client/src/pages/       one component per route
-client/src/components/  UI pieces: toolbar, layers panel, layer editor and its Style and Filter tabs, tool form, modals, ⋯ menu, list row
+client/src/components/  UI pieces: toolbar, layers panel, layer editor and its Style, Filter and Properties tabs, tool form, modals, ⋯ menu, list row
 client/src/map/         MapLibre: base style, keeping the map in step with the layers, feature popups, saving the view
 client/src/map/renderers/  how each symbology type is drawn, as MapLibre style layers
-client/src/hooks/       state for a map's layers, saving their styles and filters, property summaries, and the status banner
+client/src/hooks/       state for a map's layers, saving their styles and filters, hearing of changes made elsewhere, property summaries, and the status banner
 client/src/api.js       calls to the server API
 ```
 
@@ -96,14 +139,18 @@ Names, of maps and of new layers, can be at most 200 characters (`shared/limits.
 | POST | `/api/maps` | Create a map: `{ "name": "…" }` |
 | GET | `/api/maps/:id` | One map |
 | PATCH | `/api/maps/:id` | Rename a map: `{ "name": "…" }` |
+| POST | `/api/maps/:id/duplicate` | Copy a map, its view and its layers into a new map: `{ "name": "…" }`. Returns the new map |
 | PUT | `/api/maps/:id/view` | Save where the map was left: `{ "center": [lng, lat], "zoom": …, "bearing": …, "pitch": … }` (bearing and pitch optional) |
 | DELETE | `/api/maps/:id` | Delete a map and its layers |
-| GET | `/api/maps/:id/layers` | The map's layers, each with its `style`, `filter` (or null), feature `count`, how many match the filter (`matching`), property names (`fields`) and the box around its features as `[west, south, east, north]` (`extent`, or null) |
+| GET | `/api/maps/:id/events` | A stream of Server-Sent Events: a `changed` event whenever the map or its layers change, from anywhere. Open maps listen to it to show changes made in another tab or by an assistant |
+| GET | `/api/maps/:id/layers` | The map's layers, each with its `style`, whether it's shown (`visible`), `filter` (or null), feature `count`, how many match the filter (`matching`), property names (`fields`) the box around its features as `[west, south, east, north]` (`extent`, or null), and `data_version`, which goes up when its features are changed in place |
 | POST | `/api/maps/:id/import` | Import a file (multipart field `file`) into the map |
-| POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`, plus an optional `name` for the new layer) |
+| POST | `/api/maps/:id/tools/:tool` | Run a tool on the map's layers (fields as in `shared/spec.js`, plus an optional `name` for the new layer). Returns the new layer, with `warnings` (usually empty) |
 | PUT | `/api/layers/:id/style` | Restyle a layer: `{ "fillColor": "#rrggbb", "fillOpacity": 0–1, "outlineColor": "#rrggbb", "outlineWidth": 0–10, "opacity": 0–1, "symbology": { "type": "single" } }` (all required; a line layer ignores the fill). The symbology can instead be `{ "type": "categories", "field": "…", "categories": [{ "value": …, "color": "#rrggbb" }] }` (at most 24) or `{ "type": "scale", "field": "…", "ramp": "viridis", "min": n, "max": n }`, or for points `{ "type": "size", "field": "…", "min": n, "max": n, "minSize": 1–40, "maxSize": 1–40 }`, `{ "type": "heatmap", "field": null, "radius": 2–60, "intensity": 0.1–5 }` (or with a `field` and its `min` and `max`) or `{ "type": "cluster", "radius": 10–100 }`; its type must be one the layer's shape allows (see `shared/symbology.js`) |
 | PUT | `/api/layers/:id/filter` | Set a layer's filter: `{ "filter": { "match": "all" \| "any", "conditions": [{ "field", "op", "value" }] } }`, or `{ "filter": null }` for none (operators in `shared/filter.js`). The whole body can be at most 48 KB. Returns `{ "matching": n }` |
+| PUT | `/api/layers/:id/visible` | Show or hide a layer: `{ "visible": true \| false }` |
 | GET | `/api/layers/:id/fields` | Every property of the layer's features, with its type, number range and most common values |
+| POST | `/api/layers/:id/properties/calculate` | Set a property from an expression: `{ "name": "…", "expression": "…" }`. Returns `{ "name": "…", "numbers": n, "empty": n }` |
 | POST | `/api/layers/:id/filtered` | Save the features matching `{ "filter": …, "name": "…" }` (name optional) as a new layer in the same map |
 | DELETE | `/api/layers/:id` | Delete a layer |
 | GET | `/api/layers/:id/geojson` | A layer's features as GeoJSON (only those its filter lets through) |

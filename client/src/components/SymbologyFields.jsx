@@ -1,5 +1,5 @@
 import { symbologyType } from '../../../shared/symbology.js';
-import { buildSymbology, startingField } from '../map/buildSymbology.js';
+import { buildSymbology, startingField } from '../../../shared/buildSymbology.js';
 import CategoriesLegend from './CategoriesLegend.jsx';
 import ClusterFields from './ClusterFields.jsx';
 import HeatmapFields from './HeatmapFields.jsx';

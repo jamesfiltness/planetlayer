@@ -19,14 +19,16 @@ export const FORMATS = {
 
 export const UNITS = { km: 1000, m: 1, mi: 1609.344 };
 
-// What "Summarize within" can work out from a property's numbers in each area.
+// What the summarize tools can work out from a property's numbers.
 export const STATS = ['sum', 'mean', 'min', 'max'];
 
 // Each field is a layer picker (limited to `shapes`, or to the shape of the
 // layer picked in `sameShapeAs`), a property of the layer picked in
 // `fieldOf`, or a plain setting. A property picker may be left blank; `none`
-// says what blank means (it's "Everything" when not given). A field with
-// `needs` only matters, and can only be set, once the field it names is.
+// says what blank means (it's "Everything" when not given), and `numbers`
+// marks one whose values are added up, so they must be stored as numbers. A
+// field with `needs` only matters, and can only be set, once the field it
+// names is.
 export const TOOLS = [
   { id: 'buffer', label: 'Buffer', hint: 'Draw an area around each feature', fields: [
     { key: 'layer', label: 'Layer', shapes: SHAPES },
@@ -49,8 +51,22 @@ export const TOOLS = [
   { id: 'summarize', label: 'Summarize within', hint: 'Count the features in each area, and add up a property', fields: [
     { key: 'areas', label: 'Areas', shapes: ['polygon'] },
     { key: 'features', label: 'Features', shapes: SHAPES },
-    { key: 'field', label: 'Add up', fieldOf: 'features', initial: '', none: 'Nothing, just count' },
+    { key: 'field', label: 'Add up', fieldOf: 'features', initial: '', none: 'Nothing, just count', numbers: true },
     { key: 'stat', label: 'As', options: STATS, initial: 'sum', needs: 'field' },
+  ] },
+  { id: 'summarize_nearby', label: 'Summarize nearby', hint: 'Count the features within a distance of each feature, and add up a property', fields: [
+    { key: 'layer', label: 'Around each feature of', shapes: SHAPES },
+    { key: 'features', label: 'Count the features of', shapes: SHAPES },
+    { key: 'distance', label: 'Within', type: 'number', initial: 1 },
+    { key: 'unit', label: 'Unit', options: Object.keys(UNITS), initial: 'km' },
+    { key: 'field', label: 'Add up', fieldOf: 'features', initial: '', none: 'Nothing, just count', numbers: true },
+    { key: 'stat', label: 'As', options: STATS, initial: 'sum', needs: 'field' },
+  ] },
+  { id: 'spatial_join', label: 'Spatial join', hint: 'Give each feature the properties of the nearest feature of another layer', fields: [
+    { key: 'layer', label: 'Layer', shapes: SHAPES },
+    { key: 'join', label: 'Join from', shapes: SHAPES },
+    { key: 'distance', label: 'Search within', type: 'number', initial: 1 },
+    { key: 'unit', label: 'Unit', options: Object.keys(UNITS), initial: 'km' },
   ] },
   { id: 'centroid', label: 'Centroid', hint: 'Turn each shape into a point at its centre', fields: [
     { key: 'layer', label: 'Layer', shapes: ['line', 'polygon'] },

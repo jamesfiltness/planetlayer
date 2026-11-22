@@ -4,6 +4,7 @@ import { badRequest } from '../errors.js';
 import { importFile } from '../import.js';
 import { listLayers } from '../layers.js';
 import { duplicateMap } from '../duplicateMap.js';
+import { streamMapChanges } from '../mapEvents.js';
 import { createMap, deleteMap, getMap, listMaps, renameMap, saveMapView } from '../maps.js';
 import { runTool } from '../tools.js';
 import { upload } from '../http/upload.js';
@@ -49,6 +50,11 @@ async function requireMap(req, res, next) {
 
 mapsRouter.get('/:id/layers', requireMap, async (req, res) => {
   res.json(await listLayers(req.map.id));
+});
+
+// A stream of events, one each time the map or its layers change.
+mapsRouter.get('/:id/events', requireMap, (req, res) => {
+  streamMapChanges(req, res, req.map.id);
 });
 
 mapsRouter.post('/:id/import', requireMap, upload.single('file'), async (req, res) => {
